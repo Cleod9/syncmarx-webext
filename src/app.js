@@ -230,9 +230,11 @@ browser.storage.local.get()
     if (results.accessToken) {
       return manager.auth(results.accessToken, results.storageProvider)
         .then(function () {
+          updateIcon('normal');
           logger.log('App is authorized');
         });
     } else {
+      updateIcon('disabled');
       logger.log('App is unauthorized');
     }
   })
@@ -248,7 +250,6 @@ browser.storage.local.get()
     return saveSettings();
   })
   .then(function () {
-    updateIcon('normal');
     logger.log('Initialization completed');
   })
   .catch(function (e) {

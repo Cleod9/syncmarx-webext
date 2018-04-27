@@ -10,7 +10,7 @@ import Logger from 'logger';
 import './SettingsContainer.scss';
 
 var logger = new Logger('[SettingsContainer.jsx] ');
-var packageJSON = require('../../../package.json');
+var version = require('../../../version.json');
 
 export default class SettingsContainer extends React.Component {
   constructor() {
@@ -99,7 +99,7 @@ export default class SettingsContainer extends React.Component {
       <section className="Settings container-fluid p-3 text-center">
         <img src="icons/icon_48.png"/>
         <div className="Settings-logo mb-2">
-          <strong>syncmarx v{packageJSON.version} (alpha)</strong>
+          <strong>syncmarx v{version} (alpha)</strong>
           <div className="Settings-logoBorder pt-2 mb-1 d-inline-block"></div>
         </div>
         {(() => {
