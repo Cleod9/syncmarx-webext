@@ -1,0 +1,27 @@
+{
+  "manifest_version": 2,
+  "name": "syncmarx (alpha)",
+  "version": "0.1",
+  "description": "Web extension built for cross-browser bookmark syncing to the cloud.",
+  "icons": {
+    "48": "icons/icon_48.png",
+    "96": "icons/icon_96.png"
+  },
+
+  "permissions": [
+    "bookmarks",
+    "webRequest",
+    "*://*.dropboxapi.com/",
+    "*://syncmarx.herokuapp.com/",
+    "storage"
+  ],
+
+  "browser_action": {
+    "default_icon": "icons/icon_38.png",
+    "default_title": "syncmarx (alpha)"
+  },
+
+  "background": {
+    "scripts": ["app.js"]
+  }
+}
