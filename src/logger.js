@@ -3,7 +3,7 @@ function Logger(prefix) {
 }
 
 // Enable/disable logging
-Logger.ENABLED = true;
+Logger.ENABLED = PRODUCTION ? false : true;
 
 Logger.prototype.prefix = '';
 

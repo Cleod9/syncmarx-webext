@@ -44,15 +44,11 @@ plugins.push(
     }
   })
 );
-
-if (mode === 'production') {
-  plugins.push( new webpack.optimize.UglifyJsPlugin({
-    minimize: true,
-    compress: {
-      warnings: true
-    }
-  }) );
-}
+plugins.push(
+  new webpack.DefinePlugin({
+    PRODUCTION: mode === 'production'
+  })
+);
 
 module.exports = {
   mode: mode,
@@ -72,12 +68,15 @@ module.exports = {
   },
 
   // Source maps support (or 'inline-source-map' also works)
-  devtool: 'inline-source-map',
+  devtool: (mode === 'production') ? 'none' : 'inline-source-map',
 
   // Add loader for .ts files.
   module: {
     rules: rules
   },
 
-  plugins: plugins
+  plugins: plugins,
+  optimization: {
+    minimize: (mode === 'production')
+  }
 };

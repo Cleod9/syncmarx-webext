@@ -1,10 +1,10 @@
 {
-  "name": "kmarx",
+  "name": "syncmarx",
   "version": "0.1.0",
-  "description": "kmarx Extension",
+  "description": "Web extension built for cross-browser bookmark syncing to the cloud.",
   "repository": {
     "type": "git",
-    "url": "ssh://git@git.mcleodgaming.com/kmarks.git"
+    "url": "git@bitbucket.org:Cleod9/syncmarx-webext.git"
   },
   "scripts": {
     "dev": "set NODE_ENV=dev && webpack --watch",
