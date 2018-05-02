@@ -48,7 +48,7 @@ var Promise_each = function(arr, fn) { // take an array and a function
 
 export default class BookmarkManager {
   constructor() {
-    this.sync = this.sync.bind(this);
+    this.autoSync = this.autoSync.bind(this);
   
     this.init();
   }
@@ -65,6 +65,7 @@ export default class BookmarkManager {
     this.syncRate = 15; // Default to 15 minutes
     this.syncInterval = 0;
     this.localData = null; // { lastModified:number; DATA_VERSION: 1, data:BookmarkTreeNode}
+    this.onAutoSyncHook = null;
     clearInterval(this.syncInterval);
 
     this.resetSyncRate();
@@ -76,6 +77,8 @@ export default class BookmarkManager {
  loadLocalData() {
     return browser.bookmarks.getTree()
       .then((bookmarks) => {
+        BookmarkManager.resetCountBuffers();
+
         var result = BookmarkManager.treeNodesToJSON(bookmarks[0]);
         var json = {
           lastModified: this.lastSyncTime,
@@ -259,9 +262,13 @@ export default class BookmarkManager {
                   });
               }
             } else {
+              this.lastSyncTime = remoteData.lastModified;
               logger.log('Sync completed (No changes)');
             }
           });
+      })
+      .then(() => {
+        return this.loadLocalData();
       });
   }
 
@@ -272,7 +279,23 @@ export default class BookmarkManager {
     this.syncRate = minutes;
 
     clearInterval(this.syncInterval);
-    this.syncInterval = setInterval(this.sync, this.syncRate * 60 * 1000);
+
+    if (this.syncRate > 0) {
+      this.syncInterval = setInterval(this.autoSync, this.syncRate * 60 * 1000);
+    }
+  }
+
+  autoSync() {
+    logger.log('Running auto-sync...');
+    this.sync()
+      .then(() => {
+        if (this.onAutoSyncHook) {
+          logger.log('Executing auto-sync hook...');
+          this.onAutoSyncHook();
+        } else {
+          logger.log('No auto-sync hook provided');
+        }
+      });
   }
 
   /**
@@ -324,7 +347,17 @@ export default class BookmarkManager {
 
 }
 
-// Static functions
+// Static functions/vars
+
+/**
+ * Used for tracking number of bookmarks during tree traversal
+ */
+BookmarkManager.bookmarkCountBuffer = 0;
+BookmarkManager.folderCountBuffer = 0;
+BookmarkManager.resetCountBuffers = function () {
+  BookmarkManager.bookmarkCountBuffer = 0;
+  BookmarkManager.folderCountBuffer = 0;
+};
 
 /**
  * Converts a tree of bookmark nodes to JSON
@@ -358,6 +391,9 @@ BookmarkManager.treeNodesToJSON = function (node) {
       // Add the created child to the children list
       data.children.push(BookmarkManager.treeNodesToJSON(node.children[i]));
     }
+    BookmarkManager.folderCountBuffer++;
+  } else {
+    BookmarkManager.bookmarkCountBuffer++;
   }
 
   return data;

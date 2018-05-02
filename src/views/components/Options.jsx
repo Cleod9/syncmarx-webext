@@ -16,7 +16,7 @@ export default class Options extends React.Component {
 
   syncRate(evt) {
     var rate = parseInt(this.refs.synctimeText.value);
-    if (typeof rate === 'number' && rate > 0) {
+    if (typeof rate === 'number' && rate >= 0) {
       this.refs.synctimeText.value = rate + '';
       logger.log("Sync rate updated");
       browser.runtime.sendMessage({ action: 'changeSyncRate', syncRate: rate });
@@ -59,6 +59,7 @@ export default class Options extends React.Component {
                   <div className="mb-1">
                     <input ref="synctimeText" type="text" placeholder="Sync interval in minutes" onChange={(evt) => { this.syncRate(evt); }} defaultValue={this.props.params.syncRate}/>
                   </div>
+                  <p className="small">(Set to 0 to disable)</p>
                 </div>
                 <button id="deauth" className="btn btn-danger btn-sm" type="button" onClick={(evt) => { this.onUnlink(evt); }}>Unlink From Dropbox</button>
               </div>

@@ -26,6 +26,8 @@ export default class SettingsContainer extends React.Component {
       lastSyncTime: 0,
       accessToken: null,
       syncRate: 5,
+      totalBookmarks: 0,
+      totalFolders: 0,
       errors: []
     };
 
@@ -49,7 +51,11 @@ export default class SettingsContainer extends React.Component {
       this.setState({
         profiles: data.profiles || this.state.profiles,
         selectedProfile: data.selectedProfile,
-        syncRate: data.syncRate || this.storage.syncRate });
+        syncRate: data.syncRate || this.storage.syncRate,
+        totalBookmarks: data.totalBookmarks || 0,
+        totalFolders: data.totalFolders || 0,
+        lastSyncTime: data.lastSyncTime || this.state.lastSyncTime
+      });
 
       logger.log('panel initialized, profiles retrieved', data);
 
@@ -81,6 +87,24 @@ export default class SettingsContainer extends React.Component {
         lastSyncTime: 0
       });
       this.showPage(Authentication);
+    } else if (data.action === 'pushComplete') {
+      this.setState({
+        totalBookmarks: data.totalBookmarks || 0,
+        totalFolders: data.totalFolders || 0,
+        lastSyncTime: data.lastSyncTime
+      });
+    } else if (data.action === 'pullComplete') {
+      this.setState({
+        totalBookmarks: data.totalBookmarks || 0,
+        totalFolders: data.totalFolders || 0,
+        lastSyncTime: data.lastSyncTime
+      });
+    } else if (data.action === 'syncComplete') {
+      this.setState({
+        totalBookmarks: data.totalBookmarks || 0,
+        totalFolders: data.totalFolders || 0,
+        lastSyncTime: data.lastSyncTime
+      });
     }
 
     if (data.action.match(/Error$/g)) {

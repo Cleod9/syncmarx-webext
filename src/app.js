@@ -93,6 +93,9 @@ browser.runtime.onMessage.addListener(function (data) {
         return saveSettings();
       })
       .then(function () {
+        browser.runtime.sendMessage({ action: 'pushComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
+      })
+      .then(function () {
         updateIcon('normal');
       })
       .catch(function (e) {
@@ -105,6 +108,9 @@ browser.runtime.onMessage.addListener(function (data) {
     manager.pull()
       .then(function () {
         return saveSettings();
+      })
+      .then(function () {
+        browser.runtime.sendMessage({ action: 'pullComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
       })
       .then(function () {
         updateIcon('normal');
@@ -121,6 +127,9 @@ browser.runtime.onMessage.addListener(function (data) {
         return saveSettings();
       })
       .then(function () {
+        browser.runtime.sendMessage({ action: 'syncComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
+      })
+      .then(function () {
         updateIcon('normal');
       })
       .catch(function (e) {
@@ -132,7 +141,10 @@ browser.runtime.onMessage.addListener(function (data) {
 
     manager.getProfiles()
       .then(function (profiles) {
-        browser.runtime.sendMessage({ action: 'getProfilesComplete', profiles: profiles, selectedProfile: manager.profilePath, syncRate: manager.syncRate });
+        return manager.loadLocalData()
+          .then(() => {
+            browser.runtime.sendMessage({ action: 'getProfilesComplete', profiles: profiles, selectedProfile: manager.profilePath, syncRate: manager.syncRate, lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
+          });
       })
       .catch(function (err) {
         logger.error(err);
@@ -145,7 +157,7 @@ browser.runtime.onMessage.addListener(function (data) {
 
     saveSettings()
       .then(function () {
-        browser.runtime.sendMessage({ action: 'selectProfileComplete', selectedProfile: manager.profilePath });
+        browser.runtime.sendMessage({ action: 'selectProfileComplete', selectedProfile: manager.profilePath, lastSyncTime: manager.lastSyncTime });
       })
       .then(function () {
         updateIcon('normal');
@@ -194,17 +206,21 @@ browser.runtime.onMessage.addListener(function (data) {
 });
 
 function saveSettings() {
-  return browser.storage.local.set({
+  let settings = {
     profilePath: manager.profilePath,
     lastSyncTime: manager.lastSyncTime,
     storageProvider: manager.storageProvider,
     accessToken: manager.dbx.getAccessToken(),
     syncRate: manager.syncRate
-  }) 
+  };
+
+  return browser.storage.local.set(settings) 
     .then(function () {
-      logger.log('Settings have been saved');
+      logger.log('Settings have been saved', settings);
     });
 };
+
+manager.onAutoSyncHook = saveSettings;
 
 updateIcon('syncing');
 

@@ -12,7 +12,6 @@
     "bookmarks",
     "webRequest",
     "*://*.dropboxapi.com/",
-    "*://syncmarx.herokuapp.com/",
     "storage"
   ],
 

@@ -86,7 +86,7 @@ export default class ManageProfiles extends React.Component {
                       return (
                         <option key={index} value={value}>{text}</option>
                       );
-                    })};
+                    })}
                   </select>
                 </div>
                 <div className="mb-4">
