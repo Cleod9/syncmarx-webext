@@ -16,7 +16,9 @@ export default class Home extends React.Component {
 
   sync(evt) {
     logger.log("Sync clicked");
-    browser.runtime.sendMessage({ action: 'sync' });
+    if (this.props.onSync) {
+      this.props.onSync();
+    }
   }
   render() {
     var lastSyncText = this.props.params.lastSyncTime ? moment(new Date(this.props.params.lastSyncTime)).format('YYYY-MM-DD HH:mm:ss') : '[None]';
@@ -35,7 +37,9 @@ export default class Home extends React.Component {
               );
             }
           } else {
-            <p className="small mb-0">No profiles configured.</p>
+            return (
+              <p className="small mb-0">No profile selected.</p>
+            );
           }
         })()}
         {(() => {

@@ -27,11 +27,16 @@ export default class ManageProfiles extends React.Component {
     });
   
     logger.log("Profile changed", profilePath);
-    browser.runtime.sendMessage({ action: 'selectProfile', profilePath: profilePath });
+    if (this.props.onSelectProfile) {
+      this.props.onSelectProfile({ profilePath: profilePath });
+    }
   }
   createProfile(evt) {
     logger.log("Create profile clicked");
-    browser.runtime.sendMessage({ action: 'createProfile', name: this.refs.createProfileText.value });
+
+    if (this.props.onCreateProfile) {
+      this.props.onCreateProfile({ name:  this.refs.createProfileText.value });
+    }
   
     this.refs.createProfileText.value = '';
   }
@@ -49,8 +54,10 @@ export default class ManageProfiles extends React.Component {
   }
   pushConfirmed() {
     logger.log("Push clicked");
-    browser.runtime.sendMessage({ action: 'push' });
     this.setState({ dialog: null });
+    if (this.props.onPush) {
+      this.props.onPush();
+    }
   }
   pull(evt) {
     this.setState({
@@ -66,8 +73,10 @@ export default class ManageProfiles extends React.Component {
   }
   pullConfirmed() {
     logger.log("Pull clicked");
-    browser.runtime.sendMessage({ action: 'pull' });
     this.setState({ dialog: null });
+    if (this.props.onPull) {
+      this.props.onPull();
+    }
   }
   dialogCancelled() {
     this.setState({ dialog: null });
@@ -83,7 +92,7 @@ export default class ManageProfiles extends React.Component {
             return (
               <div>
                 <div className="mb-3">
-                  <select ref="profilesOptions" onChange={(evt) => { this.selectProfile(evt); }} defaultValue={this.props.params.selectedProfile ? this.props.params.selectedProfile.toLowerCase() : null}>
+                  <select ref="profilesOptions" onChange={(evt) => { this.selectProfile(evt); }} value={this.props.params.selectedProfile ? this.props.params.selectedProfile.toLowerCase() : null}>
                     <option key="k0" value="">[Unselected]</option>
                     {_.map(this.props.params.profiles, (profile, index) => {
                       logger.info('Found profile:', profile);

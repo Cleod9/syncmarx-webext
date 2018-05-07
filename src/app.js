@@ -148,7 +148,7 @@ browser.runtime.onMessage.addListener(function (data) {
       })
       .catch(function (err) {
         logger.error(err);
-        browser.runtime.sendMessage({ action: 'pushError', message: 'Could not retrieve profiles' });
+        browser.runtime.sendMessage({ action: 'getProfilesError', message: 'Could not retrieve profiles' });
       });
   } else if (data.action === 'selectProfile') {
     updateIcon('syncing');

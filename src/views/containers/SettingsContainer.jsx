@@ -20,6 +20,7 @@ export default class SettingsContainer extends React.Component {
 
     this.state = {
       view: Initialization,
+      previousView: Initialization,
       // Default settings
       profiles: [],
       selectedProfile: null,
@@ -51,9 +52,9 @@ export default class SettingsContainer extends React.Component {
       this.setState({
         profiles: data.profiles || this.state.profiles,
         selectedProfile: data.selectedProfile,
-        syncRate: data.syncRate || this.storage.syncRate,
-        totalBookmarks: data.totalBookmarks || 0,
-        totalFolders: data.totalFolders || 0,
+        syncRate: data.syncRate || this.state.syncRate,
+        totalBookmarks: data.totalBookmarks || this.state.totalBookmarks,
+        totalFolders: data.totalFolders || this.state.totalFolders,
         lastSyncTime: data.lastSyncTime || this.state.lastSyncTime
       });
 
@@ -89,18 +90,24 @@ export default class SettingsContainer extends React.Component {
       this.showPage(Authentication);
     } else if (data.action === 'pushComplete') {
       this.setState({
+        view: this.state.previousView,
+        previousView: null,
         totalBookmarks: data.totalBookmarks || 0,
         totalFolders: data.totalFolders || 0,
         lastSyncTime: data.lastSyncTime
       });
     } else if (data.action === 'pullComplete') {
       this.setState({
+        view: this.state.previousView,
+        previousView: null,
         totalBookmarks: data.totalBookmarks || 0,
         totalFolders: data.totalFolders || 0,
         lastSyncTime: data.lastSyncTime
       });
     } else if (data.action === 'syncComplete') {
       this.setState({
+        view: this.state.previousView,
+        previousView: null,
         totalBookmarks: data.totalBookmarks || 0,
         totalFolders: data.totalFolders || 0,
         lastSyncTime: data.lastSyncTime
@@ -116,6 +123,34 @@ export default class SettingsContainer extends React.Component {
 
   showPage(page) {
     this.setState({ view: page });
+  }
+  onAuth(params) {
+    browser.runtime.sendMessage({ action: 'auth', accessToken: params.accessToken, storageProvider: params.storageProvider });
+  }
+  onDeauth(params) {
+    browser.runtime.sendMessage({ action: 'deauth' });
+  }
+  onSync() {
+    browser.runtime.sendMessage({ action: 'sync' });
+    this.setState({ view: Initialization, previousView: this.state.view });
+  }
+  onPush() {
+    browser.runtime.sendMessage({ action: 'push' });
+    this.setState({ view: Initialization, previousView: this.state.view });
+  }
+  onPull() {
+    browser.runtime.sendMessage({ action: 'pull' });
+    this.setState({ view: Initialization, previousView: this.state.view });
+  }
+  onCreateProfile(params) {
+    browser.runtime.sendMessage({ action: 'createProfile', name: params.name });
+    this.setState({ view: Initialization, previousView: this.state.view });
+  }
+  onSelectProfile(params) {
+    browser.runtime.sendMessage({ action: 'selectProfile', profilePath: params.profilePath });
+  }
+  onChangeSyncRate(params) {
+    browser.runtime.sendMessage({ action: 'changeSyncRate', syncRate: params.syncRate });
   }
 
   render() {
@@ -193,7 +228,16 @@ export default class SettingsContainer extends React.Component {
             );
           }
         })()}
-        <this.state.view params={this.state}/>
+        <this.state.view 
+          params={this.state}
+          onAuth={this.onAuth.bind(this)}
+          onDeuth={this.onDeauth.bind(this)}
+          onSelectProfile={this.onSelectProfile.bind(this)}
+          onCreateProfile={this.onCreateProfile.bind(this)}
+          onSync={this.onSync.bind(this)}
+          onPush={this.onPush.bind(this)}
+          onPull={this.onPull.bind(this)}
+          onChangeSyncRate={this.onChangeSyncRate.bind(this)} />
       </section>
     );
   }

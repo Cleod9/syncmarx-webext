@@ -17,7 +17,9 @@ export default class Authentication extends React.Component {
 
   auth(evt) {
     logger.log("Auth clicked");
-    browser.runtime.sendMessage({ action: 'auth', accessToken: this.refs.codeText.value, storageProvider: 'dropbox' });
+    if (this.props.onAuth) {
+      this.props.onAuth({ accessToken: this.refs.codeText.value, storageProvider: 'dropbox' });
+    }
   }
   link(evt) {
     logger.log("Link clicked");

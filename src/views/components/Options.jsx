@@ -19,7 +19,9 @@ export default class Options extends React.Component {
     if (typeof rate === 'number' && rate >= 0) {
       this.refs.synctimeText.value = rate + '';
       logger.log("Sync rate updated");
-      browser.runtime.sendMessage({ action: 'changeSyncRate', syncRate: rate });
+      if (this.props.onChangeSyncRate) {
+        this.props.onChangeSyncRate({ syncRate: rate });
+      }
     }
   }
   onUnlink(evt) {
@@ -36,7 +38,9 @@ export default class Options extends React.Component {
     });
   }
   deauthConfirmed() {
-    browser.runtime.sendMessage({ action: 'deauth' });
+    if (this.props.onDeauth) {
+      this.props.onDeauth();
+    }
   }
   dialogCancelled() {
     this.setState({ dialog: null });
