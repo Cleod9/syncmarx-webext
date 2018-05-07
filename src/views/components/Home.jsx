@@ -19,6 +19,7 @@ export default class Home extends React.Component {
     browser.runtime.sendMessage({ action: 'sync' });
   }
   render() {
+    var lastSyncText = this.props.params.lastSyncTime ? moment(new Date(this.props.params.lastSyncTime)).format('YYYY-MM-DD HH:mm:ss') : '[None]';
     return (
       <div className="Home">
         <h5 className="mb-2">Home</h5>
@@ -43,7 +44,7 @@ export default class Home extends React.Component {
               <div>
                 <p className="small mb-0"><strong>Total Folders:</strong> {this.props.params.totalFolders}</p>
                 <p className="small mb-0"><strong>Total Bookmarks:</strong> {this.props.params.totalBookmarks}</p>
-                <p className="small"><strong>Last Sync:</strong> {moment(new Date(this.props.params.lastSyncTime)).format('YYYY-MM-DD HH:mm:ss')}</p>
+                <p className="small"><strong>Last Sync:</strong> {lastSyncText}</p>
                 <button id="sync" className="btn btn-outline-info" type="button" onClick={(evt) => { this.sync(evt); }}>Sync Now</button>
               </div>
             );
