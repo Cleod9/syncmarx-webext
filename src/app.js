@@ -258,7 +258,7 @@ browser.storage.local.get()
     return manager.loadLocalData();
   })
   .then(function () {
-    if (manager.dbx.getAccessToken()) {
+    if (manager.dbx.getAccessToken() && manager.syncRate !== 0) {
       return manager.sync();
     }
   })

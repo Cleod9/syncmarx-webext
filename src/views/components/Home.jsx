@@ -27,7 +27,7 @@ export default class Home extends React.Component {
           if (this.props.params.selectedProfile) {
             // Display selected profile
             let profile = _.find(this.props.params.profiles, (profile, index) => {
-              return (profile.path_lower === this.props.params.selectedProfile);
+              return (profile.path_lower === this.props.params.selectedProfile.toLowerCase());
             });
             if (profile) {
               return (

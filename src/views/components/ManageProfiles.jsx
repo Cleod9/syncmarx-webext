@@ -18,6 +18,13 @@ export default class ManageProfiles extends React.Component {
   selectProfile(evt) {
     var selectedIndex = this.refs.profilesOptions.selectedIndex;
     var profilePath = this.refs.profilesOptions.options[selectedIndex].value;
+
+    // Co-erce to display name
+    _.each(this.props.params.profiles, (profile) => {
+      if (profile.path_lower === profilePath.toLowerCase()) {
+        profilePath = profile.path_display;
+      }
+    });
   
     logger.log("Profile changed", profilePath);
     browser.runtime.sendMessage({ action: 'selectProfile', profilePath: profilePath });
@@ -76,12 +83,12 @@ export default class ManageProfiles extends React.Component {
             return (
               <div>
                 <div className="mb-3">
-                  <select ref="profilesOptions" onChange={(evt) => { this.selectProfile(evt); }} defaultValue={this.props.params.selectedProfile}>
+                  <select ref="profilesOptions" onChange={(evt) => { this.selectProfile(evt); }} defaultValue={this.props.params.selectedProfile ? this.props.params.selectedProfile.toLowerCase() : null}>
                     <option key="k0" value="">[Unselected]</option>
                     {_.map(this.props.params.profiles, (profile, index) => {
                       logger.info('Found profile:', profile);
                       let value = profile.path_lower;
-                      let text = profile.name.replace(/\.syncmarx/g, '');
+                      let text = profile.path_display.replace(/\.syncmarx/g, '').replace(/\//g, '');
         
                       return (
                         <option key={index} value={value}>{text}</option>
