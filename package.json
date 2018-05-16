@@ -1,6 +1,6 @@
 {
   "name": "syncmarx",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Web extension built for cross-browser bookmark syncing to the cloud.",
   "repository": {
     "type": "git",
