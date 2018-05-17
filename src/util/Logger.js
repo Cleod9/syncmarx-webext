@@ -1,5 +1,5 @@
 function Logger(prefix) {
-  this.prefix = prefix || '';
+  this.prefix = prefix ? prefix + ' ' : '';
 }
 
 // Enable/disable logging

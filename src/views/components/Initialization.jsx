@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactLoading from 'react-loading';
-import Logger from 'logger';
+import Logger from 'util/Logger';
 import './Initialization.scss';
 
-var logger = new Logger('[Initialization.jsx] ');
+var logger = new Logger('[Initialization.jsx]');
 
 export default class Initialization extends React.Component {
   constructor() {

@@ -1,17 +1,15 @@
 require('isomorphic-fetch');
 require('es6-promise').polyfill();
 var _ = require('lodash');
-var Dropbox = require('dropbox').Dropbox;
 var LZString = require('lz-string');
 var Cryptr = require('cryptr');
-import Logger from 'logger';
+import Logger from 'util/Logger';
+import StorageProvider from 'providers/StorageProvider';
+import Dropbox from 'providers/Dropbox';
 
-var logger = new Logger('[bookmark-manager.js] ');
+var logger = new Logger('[BookmarkManager.js]');
 var detect = require('detect-browser').detect;
 var BROWSER_NAME = detect().name;
-
-// Secret string
-var secretKey = 'GYYw7AHADAJsUFoBMFgEMEBYCMmCcCARgGwCsxCo2AzLDKdnmIUAAA==';
 
 var DATA_VERSION = 1; // Versioning for bookmarks data
 
@@ -29,9 +27,6 @@ var ROOT_MAP = {
     'menu': 'Other bookmarks'
   }
 };
-
-
-var cryptr = new Cryptr(LZString.decompressFromBase64(secretKey));
 
 // https://stackoverflow.com/questions/41607804/promise-each-without-bluebird
 var Promise_each = function(arr, fn) { // take an array and a function
@@ -57,10 +52,9 @@ export default class BookmarkManager {
    * Resets manager
    */
  init() {
-    this.dbx = new Dropbox({ clientId: '1ea74e9vcsu22oz' });
+    this.provider = new Dropbox();
     this.data = null;
     this.profilePath = '';
-    this.storageProvider = 'dropbox';
     this.lastSyncTime = 0;
     this.syncRate = 15; // Default to 15 minutes
     this.syncInterval = 0;
@@ -93,47 +87,52 @@ export default class BookmarkManager {
 
   /**
    * Sets acces token for authoriation and performs a test operation via getProfiles()
-   * @param {string} accessToken 
    */
- auth(accessToken, storageProvider) {
+ auth(provider, credentials) {
     logger.log("Start auth");
-    if (!accessToken) {
-      return Promise.reject('Error, no access token provided');
+    if (!credentials) {
+      return Promise.reject('Error, no credentials provided');
     }
-    this.storageProvider = 'dropbox';
-    this.dbx.setAccessToken(accessToken);
 
-    return this.getProfiles();
+    if (provider === 'dropbox') {
+      this.provider = new Dropbox();
+    } else {
+      return Promise.reject('Invalid provider:', provider);
+    }
+
+    this.provider.setParams({ credentials: credentials });
+
+    return this.provider.authorize()
+      .then(() => {
+        return this.getProfiles();
+      });
   }
 
   /**
    * Sets acces token for authoriation and performs a test operation via getProfiles()
-   * @param {string} accessToken 
    */
   revokeAuth() {
     logger.log("Revoke auth");
-    if (!this.dbx.getAccessToken()) {
+    if (!this.provider.isAuthed()) {
       return Promise.reject('Error, no token to be revoked');
     }
 
-    return this.dbx.authTokenRevoke();
+    return this.provider.deauthorize();
   }
   
   /**
    * Retrieves bookmark profiles saved under the syncmarx app folder
    */
  getProfiles() {
-    if (!this.dbx.getAccessToken()) {
+    if (!this.provider.isAuthed()) {
       return Promise.reject('Error cannot retrieve bookmark data, no access token provided');
     }
     
-    return this.dbx.filesListFolder({path: ''})
-      .then((response) => {
-        logger.log("Data retrieved successfully - DropBox Folder Contents: " , response.entries);
+    return this.provider.filesList('')
+      .then((entries) => {
+        this.profiles = entries;
 
-        this.profiles = response.entries;
-
-        return response.entries;
+        return this.profiles;
       })
       .catch((error) => {
         logger.error(JSON.stringify(error));
@@ -147,7 +146,7 @@ export default class BookmarkManager {
    */
  push() {
     logger.log("Start push");
-    if (!this.dbx.getAccessToken()) {
+    if (!this.provider.isAuthed()) {
       return Promise.reject('Error during push, no available access token');
     } else if (!this.profilePath) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
@@ -156,16 +155,10 @@ export default class BookmarkManager {
     return this.loadLocalData()
       .then(() => {
         this.localData.lastModified = new Date().getTime();
-
-        // Encrypt and compress
-        var encryptedData = cryptr.encrypt(LZString.compressToBase64(JSON.stringify(this.localData)));
       
-        var file = new File([encryptedData], this.profilePath.replace(/^\//g, ''));
-      
-        return this.dbx.filesUpload({path: this.profilePath, contents: file, mode: 'overwrite' })
-          .then((response) =>  {
+        return this.provider.fileUpload({ path: this.profilePath, contents: this.localData })
+          .then(() =>  {
             this.lastSyncTime = this.localData.lastModified;
-            logger.log('File uploaded!', response);
           })
       })
       .catch((error) => {
@@ -179,7 +172,7 @@ export default class BookmarkManager {
    * Overwrites local bookmarks with the ones on the server
    */
  pull() {
-    if (!this.dbx.getAccessToken()) {
+    if (!this.provider.isAuthed()) {
       return Promise.reject('Error during pull, no available access token');
     } else if (!this.profilePath) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
@@ -202,6 +195,9 @@ export default class BookmarkManager {
                   return BookmarkManager.applyDeltaDeleteHelper(child);
                 })
                   .then(() => {
+                    // Set last sync time to zero to force out-of-date
+                    this.lastSyncTime = 0;
+
                     return this.sync();
                   });
               });
@@ -220,7 +216,7 @@ export default class BookmarkManager {
  sync() {
     logger.log("Start sync");
     
-    if (!this.dbx.getAccessToken()) {
+    if (!this.provider.isAuthed()) {
       return Promise.reject('Error during sync, no available access token');
     } else if (!this.profilePath) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
@@ -257,8 +253,8 @@ export default class BookmarkManager {
                 })
                   .then((results) => {
                       // Let's push the new data
-                      logger.log('Sync completed (Merged with changes)');
-                      return this.push();
+                      this.lastSyncTime = remoteData.lastModified;
+                      logger.log('Sync completed (Merged, no need to push)');
                   });
               }
             } else {
@@ -309,30 +305,13 @@ export default class BookmarkManager {
    * Overwrites local bookmarks with the ones on the server
    */
  getRemoteData() {
-    if (!this.dbx.getAccessToken()) {
+    if (!this.provider.isAuthed()) {
       return Promise.reject('Error during pull, no available access token');
     } else if (!this.profilePath) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
     }
 
-    return this.dbx.filesDownload({path: this.profilePath })
-      .then((response) => {
-        logger.log('File downloaded!', response);
-
-        return new Promise((resolve, reject) => {
-          var reader = new FileReader();
-          reader.onload = () => {
-              // Decompress and decrypt
-              var decryptedData = JSON.parse(LZString.decompressFromBase64(cryptr.decrypt(reader.result)));
-
-              resolve(decryptedData);
-          };
-          reader.onerror = (e) => {
-            reject(e);
-          };
-          reader.readAsText(response.fileBlob);
-        });
-      })
+    return this.provider.fileDownload({path: this.profilePath })
       .then((result) => {
         logger.log('File contents!', result);
 

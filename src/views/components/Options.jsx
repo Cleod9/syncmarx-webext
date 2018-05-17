@@ -1,9 +1,9 @@
 import React from 'react';
-import Logger from 'logger';
+import Logger from 'util/Logger';
 import Error from 'views/components/Error';
 import Confirm from 'views/components/Confirm';
 
-var logger = new Logger('[Options.jsx] ');
+var logger = new Logger('[Options.jsx]');
 
 export default class Options extends React.Component {
   constructor() {
@@ -38,6 +38,7 @@ export default class Options extends React.Component {
     });
   }
   deauthConfirmed() {
+    this.setState({ dialog: null });
     if (this.props.onDeauth) {
       this.props.onDeauth();
     }

@@ -1,10 +1,10 @@
 import React from 'react';
-import Logger from 'logger';
+import Logger from 'util/Logger';
 import Error from 'views/components/Error';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 
-var logger = new Logger('[Home.jsx] ');
+var logger = new Logger('[Home.jsx]');
 
 export default class Home extends React.Component {
   constructor() {

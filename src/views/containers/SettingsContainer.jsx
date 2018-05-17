@@ -6,10 +6,10 @@ import Home from 'views/components/Home';
 import Initialization from 'views/components/Initialization';
 import ManageProfiles from 'views/components/ManageProfiles';
 import Options from 'views/components/Options';
-import Logger from 'logger';
+import Logger from 'util/Logger';
 import './SettingsContainer.scss';
 
-var logger = new Logger('[SettingsContainer.jsx] ');
+var logger = new Logger('[SettingsContainer.jsx]');
 var version = require('../../../version.json');
 
 export default class SettingsContainer extends React.Component {
@@ -25,7 +25,7 @@ export default class SettingsContainer extends React.Component {
       profiles: [],
       selectedProfile: null,
       lastSyncTime: 0,
-      accessToken: null,
+      authorized: false,
       syncRate: 5,
       totalBookmarks: 0,
       totalFolders: 0,
@@ -34,21 +34,20 @@ export default class SettingsContainer extends React.Component {
 
     browser.runtime.onMessage.addListener(this.onMessage);
     
-    browser.storage.local.get('accessToken')
-      .then((results) => {
-        if (results.accessToken) {
-          this.setState({ accessToken: results.accessToken });
-
-          browser.runtime.sendMessage({ action: 'getProfiles' });
-        } else {
-          this.setState({ view: Authentication });
-        }
-        logger.log('panel initialized');
-      });
+    browser.runtime.sendMessage({ action: 'init' });
   }
 
   onMessage(data) {
-    if (data.action === 'getProfilesComplete' || data.action === 'createProfileComplete') {
+    if (data.action === 'initComplete') {
+      if (data.authorized) {
+        this.setState({ authorized: true });
+
+        browser.runtime.sendMessage({ action: 'getProfiles' });
+      } else {
+        this.setState({ view: Authentication });
+      }
+      logger.log('panel initialized');
+    } else if (data.action === 'getProfilesComplete' || data.action === 'createProfileComplete') {
       this.setState({
         profiles: data.profiles || this.state.profiles,
         selectedProfile: data.selectedProfile,
@@ -75,14 +74,14 @@ export default class SettingsContainer extends React.Component {
       this.showPage(Options);
     } else if (data.action === 'authComplete') {
       this.setState({ 
-        accessToken: data.accessToken,
+        authorized: true,
         view: Home
       });
       this.showPage(Home);
       browser.runtime.sendMessage({ action: 'getProfiles' });
     } else if (data.action === 'deauthComplete') {
       this.setState({ 
-        accessToken: '',
+        authorized: false,
         profiles: [],
         selectedProfile: null,
         lastSyncTime: 0
@@ -115,7 +114,7 @@ export default class SettingsContainer extends React.Component {
     }
 
     if (data.action.match(/Error$/g)) {
-      this.setState({ errors: [data.message]});
+      this.setState({ view: this.state.previousView, errors: [data.message]});
     } else {
       this.setState({ errors: []});
     }
@@ -125,10 +124,12 @@ export default class SettingsContainer extends React.Component {
     this.setState({ view: page });
   }
   onAuth(params) {
-    browser.runtime.sendMessage({ action: 'auth', accessToken: params.accessToken, storageProvider: params.storageProvider });
+    browser.runtime.sendMessage({ action: 'auth', provider: params.provider, credentials: params.credentials });
+    this.setState({ view: Initialization, previousView: this.state.view });
   }
   onDeauth(params) {
     browser.runtime.sendMessage({ action: 'deauth' });
+    this.setState({ view: Initialization, previousView: this.state.view });
   }
   onSync() {
     browser.runtime.sendMessage({ action: 'sync' });
@@ -170,7 +171,7 @@ export default class SettingsContainer extends React.Component {
                     classNames('btn btn-sm', {
                       'btn-outline-primary': this.state.view === Authentication,
                       'btn-outline-secondary': this.state.view !== Authentication,
-                      'd-none': (this.state.accessToken) ? true : false
+                      'd-none': (this.state.authorized) ? true : false
                     })
                   }
                   onClick={() => { this.setState({ view: Authentication })}}
@@ -182,7 +183,7 @@ export default class SettingsContainer extends React.Component {
                     classNames('btn btn-sm', {
                       'btn-outline-primary': this.state.view === Home,
                       'btn-outline-secondary': this.state.view !== Home,
-                      'd-none': (this.state.accessToken) ? false : true
+                      'd-none': (this.state.authorized) ? false : true
                     })
                   }
                   onClick={() => { this.setState({ view: Home })}}
@@ -194,7 +195,7 @@ export default class SettingsContainer extends React.Component {
                     classNames('btn btn-sm', {
                       'btn-outline-primary': this.state.view === ManageProfiles,
                       'btn-outline-secondary': this.state.view !== ManageProfiles,
-                      'd-none': (this.state.accessToken) ? false : true
+                      'd-none': (this.state.authorized) ? false : true
                     })
                   }
                   onClick={() => { this.setState({ view: ManageProfiles })}}
@@ -206,7 +207,7 @@ export default class SettingsContainer extends React.Component {
                     classNames('btn btn-sm', {
                       'btn-outline-primary': this.state.view === Options,
                       'btn-outline-secondary': this.state.view !== Options,
-                      'd-none': (this.state.accessToken) ? false : true
+                      'd-none': (this.state.authorized) ? false : true
                     })
                   }
                   onClick={() => { this.setState({ view: Options })}}
@@ -231,7 +232,7 @@ export default class SettingsContainer extends React.Component {
         <this.state.view 
           params={this.state}
           onAuth={this.onAuth.bind(this)}
-          onDeuth={this.onDeauth.bind(this)}
+          onDeauth={this.onDeauth.bind(this)}
           onSelectProfile={this.onSelectProfile.bind(this)}
           onCreateProfile={this.onCreateProfile.bind(this)}
           onSync={this.onSync.bind(this)}

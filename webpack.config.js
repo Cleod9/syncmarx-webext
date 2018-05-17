@@ -53,11 +53,11 @@ plugins.push(
 module.exports = {
   mode: mode,
   entry: {
-    app: './src/app.js',
-    settings: './src/settings.jsx'
+    app: './src/core/App.js',
+    settings: './src/core/Settings.jsx'
   },
   output: {
-    path: path.resolve(__dirname, 'app'),
+    path: path.resolve(__dirname, 'App'),
     filename: '[name].js',
     publicPath: '/'
   },

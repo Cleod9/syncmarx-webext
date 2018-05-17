@@ -1,8 +1,8 @@
 import React from 'react';
-import Logger from 'logger';
+import Logger from 'util/Logger';
 import Error from 'views/components/Error';
 
-var logger = new Logger('[Confirm.jsx] ');
+var logger = new Logger('[Confirm.jsx]');
 
 export default class Confirm extends React.Component {
   constructor() {

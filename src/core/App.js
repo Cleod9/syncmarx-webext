@@ -1,14 +1,13 @@
 import 'isomorphic-fetch';
-import BookmarkManager from 'bookmark-manager';
+import BookmarkManager from 'core/BookmarkManager';
 
 require('es6-promise').polyfill();
-var detect = require('detect-browser').detect;
 window.browser = require('webextension-polyfill');
-import Logger from 'logger';
+import Logger from 'util/Logger';
 
-var logger = new Logger('[app.js] ');
+var logger = new Logger('[App.js]');
 var manager = new BookmarkManager();
-var BROWSER_NAME = detect().name;
+var version = require('../../version.json');
 
 /*
  * Updates the browserAction icon to reflect whether the current page
@@ -48,15 +47,16 @@ browser.browserAction.setPopup({
 
 // Add message listener
 browser.runtime.onMessage.addListener(function (data) {
-  if (data.action === 'auth') {
+  if (data.action === 'init') {
+    browser.runtime.sendMessage({ action: 'initComplete', authorized: manager.provider.isAuthed() });
+  } else if (data.action === 'auth') {
     updateIcon('syncing');
-    manager.auth(data.accessToken, data.storageProvider)
+    manager.auth(data.provider, data.credentials)
       .then(function () {
         logger.log("Authorization successful")
-        return browser.storage.local.set({ accessToken: data.accessToken })
-          .then(function (profiles) {
+        return saveSettings()
+          .then(function () {
             browser.runtime.sendMessage({ action: 'authComplete', accessToken: data.accessToken });
-            logger.log("Stored access token");
           });
       })
       .then(function () {
@@ -79,7 +79,7 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'deauthComplete' });
       })
       .then(function () {
-        updateIcon('normal');
+        updateIcon('disabled');
       })
       .catch(function (e) {
         logger.error(e);
@@ -205,20 +205,69 @@ browser.runtime.onMessage.addListener(function (data) {
     }
 });
 
-function saveSettings() {
-  let settings = {
-    profilePath: manager.profilePath,
-    lastSyncTime: manager.lastSyncTime,
-    storageProvider: manager.storageProvider,
-    accessToken: manager.dbx.getAccessToken(),
-    syncRate: manager.syncRate
+function getSettings() {
+  return {
+      migration: '01_credentials_struct',
+      profilePath: manager.profilePath,
+      lastSyncTime: manager.lastSyncTime,
+      syncRate: manager.syncRate,
+      provider: manager.provider.getType(),
+      credentials: manager.provider.getCredentials()
   };
+}
+function saveSettings(settings) {
+  settings = settings || getSettings();
 
-  return browser.storage.local.set(settings) 
+  return browser.storage.local.set({ data: JSON.stringify(settings) }) 
     .then(function () {
       logger.log('Settings have been saved', settings);
     });
 };
+function migrateSettings(settings) {
+  // Migrate settings to a newer version
+  if (!settings.data && settings.accessToken) {
+    // Data param hasn't been added yet (pre 0.3)
+    // Clear out local storage
+    return browser.storage.local.clear()
+      .then(() => {
+        // Inject migration field
+        settings.migration = '00_migration_init';
+        logger.info("Migrated storage to " + settings.migration);
+
+        // Finish migration
+        return migrateSettings({ data: JSON.stringify(settings) })
+          .then((results) => {
+            return saveSettings(settings)
+              .then(() => {
+                return results;
+              });
+          });
+      });
+  } else {
+    if (settings.data) {
+      settings = JSON.parse(settings.data);
+    } else {
+      settings = getSettings();
+    }
+
+    if (settings.migration === '00_migration_init') {
+      settings.provider = 'dropbox';
+      settings.credentials = {
+        accessToken: settings.accessToken
+      };
+
+      // Strip access token field
+      delete settings.accessToken;
+
+      settings.migration = '01_credentials_struct';
+      logger.info("Migrated storage to " + settings.migration);
+    }
+
+    logger.info("Migrations completed");
+
+    return Promise.resolve(settings);
+  }
+}
 
 manager.onAutoSyncHook = saveSettings;
 
@@ -226,25 +275,28 @@ updateIcon('syncing');
 
 browser.storage.local.get()
   .then(function (results) {
-    logger.log('Loaded settings:', results);
+    return migrateSettings(results);
+  })
+  .then(function (settings) {
+    logger.log('Loaded settings:', settings);
     // Store the remembered profile
-    if (results.profilePath) {
-      manager.profilePath = results.profilePath;
+    if (settings.profilePath) {
+      manager.profilePath = settings.profilePath;
     }
 
     // Use the last sync time to remember when was last synced
-    if (results.lastSyncTime) {
-      manager.lastSyncTime = results.lastSyncTime;
+    if (settings.lastSyncTime) {
+      manager.lastSyncTime = settings.lastSyncTime;
     }
 
     // Update the sync rate
-    if (results.syncRate) {
-      manager.changeSyncRate(results.syncRate);
+    if (settings.syncRate) {
+      manager.changeSyncRate(settings.syncRate);
     }
 
     // Test login to Dropbox
-    if (results.accessToken) {
-      return manager.auth(results.accessToken, results.storageProvider)
+    if (settings.credentials) {
+      return manager.auth(settings.provider, settings.credentials)
         .then(function () {
           updateIcon('normal');
           logger.log('App is authorized');
@@ -258,7 +310,7 @@ browser.storage.local.get()
     return manager.loadLocalData();
   })
   .then(function () {
-    if (manager.dbx.getAccessToken() && manager.syncRate !== 0) {
+    if (manager.provider.isAuthed() && manager.syncRate !== 0) {
       return manager.sync();
     }
   })
