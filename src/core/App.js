@@ -313,7 +313,7 @@ browser.storage.local.get()
     }
 
     // Update the compression setting
-    manager.compression =  (settings.compression) ? true : false;
+    manager.compression = (settings.compression) ? true : false;
 
     // Test login to Dropbox
     if (settings.credentials) {
