@@ -53,11 +53,12 @@ export default class BookmarkManager {
    */
  init() {
     this.provider = new Dropbox();
-    this.data = null;
     this.profilePath = '';
     this.lastSyncTime = 0;
     this.syncRate = 15; // Default to 15 minutes
     this.syncInterval = 0;
+    this.compression = true;
+    this.lastPullCompression = true;
     this.localData = null; // { lastModified:number; DATA_VERSION: 1, data:BookmarkTreeNode}
     this.onAutoSyncHook = null;
     clearInterval(this.syncInterval);
@@ -156,7 +157,7 @@ export default class BookmarkManager {
       .then(() => {
         this.localData.lastModified = new Date().getTime();
       
-        return this.provider.fileUpload({ path: this.profilePath, contents: this.localData })
+        return this.provider.fileUpload({ path: this.profilePath, contents: this.localData, compression: this.compression })
           .then(() =>  {
             this.lastSyncTime = this.localData.lastModified;
           })
@@ -264,6 +265,13 @@ export default class BookmarkManager {
           });
       })
       .then(() => {
+        // Import compression setting if necessary
+        if (this.lastPullCompression !== this.compression) {
+          logger.log('Updated compression settings change');
+          this.compression = this.lastPullCompression;
+        }
+      })
+      .then(() => {
         return this.loadLocalData();
       });
   }
@@ -315,7 +323,9 @@ export default class BookmarkManager {
       .then((result) => {
         logger.log('File contents!', result);
 
-        return result;
+        this.lastPullCompression = result.compressed ? true : false;
+
+        return result.contents;
       })
       .catch((error) => {
         logger.error(JSON.stringify(error));

@@ -27,6 +27,7 @@ export default class SettingsContainer extends React.Component {
       lastSyncTime: 0,
       authorized: false,
       syncRate: 5,
+      compression: true,
       totalBookmarks: 0,
       totalFolders: 0,
       errors: []
@@ -40,11 +41,11 @@ export default class SettingsContainer extends React.Component {
   onMessage(data) {
     if (data.action === 'initComplete') {
       if (data.authorized) {
-        this.setState({ authorized: true });
+        this.setState({ authorized: true, compression: data.compression });
 
         browser.runtime.sendMessage({ action: 'getProfiles' });
       } else {
-        this.setState({ view: Authentication });
+        this.setState({ view: Authentication, compression: data.compression });
       }
       logger.log('panel initialized');
     } else if (data.action === 'getProfilesComplete' || data.action === 'createProfileComplete') {
@@ -101,7 +102,8 @@ export default class SettingsContainer extends React.Component {
         previousView: null,
         totalBookmarks: data.totalBookmarks || 0,
         totalFolders: data.totalFolders || 0,
-        lastSyncTime: data.lastSyncTime
+        lastSyncTime: data.lastSyncTime,
+        compression: data.compression
       });
     } else if (data.action === 'syncComplete') {
       this.setState({
@@ -109,7 +111,12 @@ export default class SettingsContainer extends React.Component {
         previousView: null,
         totalBookmarks: data.totalBookmarks || 0,
         totalFolders: data.totalFolders || 0,
-        lastSyncTime: data.lastSyncTime
+        lastSyncTime: data.lastSyncTime,
+        compression: data.compression
+      });
+    } else if (data.action === 'changeCompressionComplete') {
+      this.setState({
+        compression: data.compression
       });
     }
 
@@ -152,6 +159,9 @@ export default class SettingsContainer extends React.Component {
   }
   onChangeSyncRate(params) {
     browser.runtime.sendMessage({ action: 'changeSyncRate', syncRate: params.syncRate });
+  }
+  onChangeCompression(params) {
+    browser.runtime.sendMessage({ action: 'changeCompression', compression: params.compression });
   }
 
   render() {
@@ -238,7 +248,8 @@ export default class SettingsContainer extends React.Component {
           onSync={this.onSync.bind(this)}
           onPush={this.onPush.bind(this)}
           onPull={this.onPull.bind(this)}
-          onChangeSyncRate={this.onChangeSyncRate.bind(this)} />
+          onChangeSyncRate={this.onChangeSyncRate.bind(this)}
+          onChangeCompression={this.onChangeCompression.bind(this)} />
       </section>
     );
   }

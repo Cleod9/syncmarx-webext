@@ -48,7 +48,7 @@ browser.browserAction.setPopup({
 // Add message listener
 browser.runtime.onMessage.addListener(function (data) {
   if (data.action === 'init') {
-    browser.runtime.sendMessage({ action: 'initComplete', authorized: manager.provider.isAuthed() });
+    browser.runtime.sendMessage({ action: 'initComplete', authorized: manager.provider.isAuthed(), compression: manager.compression });
   } else if (data.action === 'auth') {
     updateIcon('syncing');
     manager.auth(data.provider, data.credentials)
@@ -110,7 +110,7 @@ browser.runtime.onMessage.addListener(function (data) {
         return saveSettings();
       })
       .then(function () {
-        browser.runtime.sendMessage({ action: 'pullComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
+        browser.runtime.sendMessage({ action: 'pullComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer, compression: manager.compression });
       })
       .then(function () {
         updateIcon('normal');
@@ -127,7 +127,7 @@ browser.runtime.onMessage.addListener(function (data) {
         return saveSettings();
       })
       .then(function () {
-        browser.runtime.sendMessage({ action: 'syncComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
+        browser.runtime.sendMessage({ action: 'syncComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer, compression: manager.compression });
       })
       .then(function () {
         updateIcon('normal');
@@ -202,17 +202,30 @@ browser.runtime.onMessage.addListener(function (data) {
           updateIcon('disabled');
           browser.runtime.sendMessage({ action: 'pushError', message: 'An error occured while updating sync interval' });
         });
+    } else if (data.action === 'changeCompression') {
+      manager.compression = data.compression;
+
+      saveSettings()
+        .then(function () {
+          browser.runtime.sendMessage({ action: 'changeCompressionComplete', compression: data.compression });
+        })
+        .catch(function (e) {
+          logger.error(e);
+          updateIcon('disabled');
+          browser.runtime.sendMessage({ action: 'pushError', message: 'An error occured while changing compression setting' });
+        });
     }
 });
 
 function getSettings() {
   return {
-      migration: '01_credentials_struct',
+      migration: '02_compression_setting',
       profilePath: manager.profilePath,
       lastSyncTime: manager.lastSyncTime,
       syncRate: manager.syncRate,
       provider: manager.provider.getType(),
-      credentials: manager.provider.getCredentials()
+      credentials: manager.provider.getCredentials(),
+      compression: manager.compression
   };
 }
 function saveSettings(settings) {
@@ -262,6 +275,11 @@ function migrateSettings(settings) {
       settings.migration = '01_credentials_struct';
       logger.info("Migrated storage to " + settings.migration);
     }
+    if (settings.migration === '01_credentials_struct') {
+      settings.compression = true;
+
+      settings.migration = '02_compression_setting';
+    }
 
     logger.info("Migrations completed");
 
@@ -293,6 +311,9 @@ browser.storage.local.get()
     if (settings.syncRate) {
       manager.changeSyncRate(settings.syncRate);
     }
+
+    // Update the compression setting
+    manager.compression =  (settings.compression) ? true : false;
 
     // Test login to Dropbox
     if (settings.credentials) {

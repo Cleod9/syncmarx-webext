@@ -41,7 +41,7 @@ export default class Dropbox extends StorageProvider {
   }
   fileUpload(data) {
     // Encrypt and compress
-    var encryptedData = this.encryptData(data.contents);
+    var encryptedData = (data.compression) ? this.encryptData(data.contents) : JSON.stringify(data.contents, null, 2);
   
     var file = new File([encryptedData], data.path.replace(/^\//g, ''));
   
@@ -59,7 +59,17 @@ export default class Dropbox extends StorageProvider {
           var reader = new FileReader();
           reader.onload = () => {
               // Decompress and decrypt
-              resolve(this.decryptData(reader.result));
+              var contents = null;
+              var compressed = false;
+
+              try {
+                contents = JSON.parse(reader.result);
+              } catch(e) {
+                contents = this.decryptData(reader.result);
+                compressed = true;
+              }
+
+              resolve({ contents: contents, compressed: compressed });
           };
           reader.onerror = (e) => {
             reject(e);

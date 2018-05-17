@@ -46,8 +46,14 @@ export default class Options extends React.Component {
   dialogCancelled() {
     this.setState({ dialog: null });
   }
+  onChangeCompression(evt) {
+    if (this.props.onChangeCompression) {
+      this.props.onChangeCompression({ compression: this.refs.compression.checked });
+    }
+  }
   
   render() {
+    var uid = 'uid' + Math.random();
     return (
       <div className="Options">
         <h5 className="mb-2">Options</h5>
@@ -65,6 +71,14 @@ export default class Options extends React.Component {
                     <input ref="synctimeText" type="text" placeholder="Sync interval in minutes" onChange={(evt) => { this.syncRate(evt); }} defaultValue={this.props.params.syncRate}/>
                   </div>
                   <p className="small">(Set to 0 to disable)</p>
+                  <div className="mb-1">
+                    <div className="form-check">
+                      <input ref="compression" className="form-check-input" type="checkbox" checked={this.props.params.compression} id={uid} onChange={this.onChangeCompression.bind(this)} />
+                      <label className="form-check-label" htmlFor={uid}>
+                        Compress Data
+                      </label>
+                    </div>
+                  </div>
                 </div>
                 <button id="deauth" className="btn btn-danger btn-sm" type="button" onClick={(evt) => { this.onUnlink(evt); }}>Unlink From Dropbox</button>
               </div>
