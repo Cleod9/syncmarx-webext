@@ -2,7 +2,6 @@ import React from 'react';
 import _ from 'lodash';
 import Logger from 'util/Logger';
 import Confirm from 'views/components/Confirm';
-import Error from 'views/components/Error';
 
 var logger = new Logger('[ManageProfiles.jsx]');
 
@@ -121,7 +120,6 @@ export default class ManageProfiles extends React.Component {
             )
           }
         })()}
-        <Error message={this.props.params.errors[0] || ''}/>
       </div>
     );
   }

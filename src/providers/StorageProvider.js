@@ -12,26 +12,20 @@ var cryptr = new Cryptr(LZString.decompressFromBase64(secretKey));
 
 export default class StorageProvider {
 
-  constructor(params) {
-    this.params = params || {};
+  constructor() {
   }
 
   getType() {
     return 'storageProvider';
   }
   getCredentials() {
-    return this.params.credentials || null;
-  }
-  setParams(params) {
-    for (var i in params) {
-      this.params[i] = params[i];
-    }
+    return null;
   }
   isAuthed() {
     logger.warn('Warning, must override StorageProvider isAuthed() function');
     return true;  
   }
-  authorize() {
+  authorize(credentials) {
     logger.warn('Warning, must override StorageProvider authorize() function');
 
     return Promise.resolve();

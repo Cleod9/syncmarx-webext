@@ -1,6 +1,5 @@
 import React from 'react';
 import Logger from 'util/Logger';
-import Error from 'views/components/Error';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 
@@ -54,7 +53,6 @@ export default class Home extends React.Component {
             );
           }
         })()}
-        <Error message={this.props.params.errors[0] || ''}/>
       </div>
     );
   }

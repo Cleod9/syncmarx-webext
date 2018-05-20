@@ -1,6 +1,5 @@
 import React from 'react';
 import Logger from 'util/Logger';
-import Error from 'views/components/Error';
 import Confirm from 'views/components/Confirm';
 
 var logger = new Logger('[Options.jsx]');
@@ -85,7 +84,6 @@ export default class Options extends React.Component {
             );
           }
         })()}
-        <Error message={this.props.params.errors[0] || ''}/>
       </div>
     );
   }

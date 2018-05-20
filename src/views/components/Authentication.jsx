@@ -1,6 +1,5 @@
 import React from 'react';
 import Logger from 'util/Logger';
-import Error from 'views/components/Error';
 
 var Dropbox = require('dropbox').Dropbox;
 
@@ -37,7 +36,6 @@ export default class Authentication extends React.Component {
         <div className="input-group">
           <input className="form-control" ref="codeText" type="text" placeholder="Paste Token Here"/> 
           <button id="auth" type="button" className="btn btn-primary btn-sm input-group-addon" onClick={(evt) => { this.auth(evt); }}>Authorize</button>
-          <Error message={this.props.params.errors[0] || ''}/>
         </div>
       </div>
     );

@@ -98,12 +98,11 @@ export default class BookmarkManager {
     if (provider === 'dropbox') {
       this.provider = new Dropbox();
     } else {
-      return Promise.reject('Invalid provider:', provider);
+      logger.error('Invalid provider', provider);
+      return Promise.reject('Invalid provider');
     }
-
-    this.provider.setParams({ credentials: credentials });
-
-    return this.provider.authorize()
+    
+    return this.provider.authorize(credentials)
       .then(() => {
         return this.getProfiles();
       });

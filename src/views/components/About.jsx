@@ -1,6 +1,5 @@
 import React from 'react';
 import Logger from 'util/Logger';
-import Error from 'views/components/Error';
 
 var logger = new Logger('[About.jsx]');
 

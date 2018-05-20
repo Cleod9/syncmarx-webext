@@ -6,8 +6,8 @@ var logger = new Logger('[Dropbox.js]');
 
 export default class Dropbox extends StorageProvider {
 
-  constructor(params) {
-    super(params);
+  constructor() {
+    super();
 
     this.dbx = new DropboxCls({ clientId: '1ea74e9vcsu22oz' });
   }
@@ -15,14 +15,14 @@ export default class Dropbox extends StorageProvider {
   getType() {
     return 'dropbox';
   }
+  getCredentials() {
+    return { accessToken: this.dbx.getAccessToken() };
+  }
   isAuthed() {
     return this.dbx.getAccessToken() ? true : false;  
   }
-  setParams(params) {
-    super.setParams(params);
-  }
-  authorize() {
-    this.dbx.setAccessToken(this.params.credentials ? this.params.credentials.accessToken : null);
+  authorize(credentials) {
+    this.dbx.setAccessToken(credentials ? credentials.accessToken : null);
 
     return Promise.resolve();
   }

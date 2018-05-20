@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "syncmarx (alpha)",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Web extension built for cross-browser bookmark syncing to the cloud.",
   "icons": {
     "48": "icons/icon_48.png",

@@ -1,13 +1,16 @@
 import 'isomorphic-fetch';
-import BookmarkManager from 'core/BookmarkManager';
-
 require('es6-promise').polyfill();
 window.browser = require('webextension-polyfill');
+import BookmarkManager from 'core/BookmarkManager';
 import Logger from 'util/Logger';
+import * as Debug from 'core/Debug';
+import * as SaveData from 'util/SaveData';
 
 var logger = new Logger('[App.js]');
 var manager = new BookmarkManager();
 var version = require('../../version.json');
+
+SaveData.init(manager);
 
 /*
  * Updates the browserAction icon to reflect whether the current page
@@ -54,7 +57,7 @@ browser.runtime.onMessage.addListener(function (data) {
     manager.auth(data.provider, data.credentials)
       .then(function () {
         logger.log("Authorization successful")
-        return saveSettings()
+        return SaveData.saveSettings()
           .then(function () {
             browser.runtime.sendMessage({ action: 'authComplete', accessToken: data.accessToken });
           });
@@ -65,11 +68,14 @@ browser.runtime.onMessage.addListener(function (data) {
       .catch(function (e) {
         logger.error(e);
         updateIcon('disabled');
-        browser.runtime.sendMessage({ action: 'authError', message: 'Invalid access token' });
+        browser.runtime.sendMessage({ action: 'authError', message: formatRejection(e, 'Invalid access token') });
       });
   } else if (data.action === 'deauth') {
     updateIcon('syncing');
     manager.revokeAuth()
+      .catch(function (e) {
+        logger.error('Problem deauthorizing token', e);
+      })
       .then(function () {
         return browser.storage.local.remove(['accessToken'])
       })
@@ -84,13 +90,13 @@ browser.runtime.onMessage.addListener(function (data) {
       .catch(function (e) {
         logger.error(e);
         updateIcon('disabled');
-        browser.runtime.sendMessage({ action: 'deauthError', message: 'An unknown error occured' });
+        browser.runtime.sendMessage({ action: 'deauthError', message: formatRejection(e, 'An unknown error occured') });
       });
   } else if (data.action === 'push') {
     updateIcon('syncing');
     manager.push()
       .then(function () {
-        return saveSettings();
+        return SaveData.saveSettings();
       })
       .then(function () {
         browser.runtime.sendMessage({ action: 'pushComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
@@ -101,13 +107,13 @@ browser.runtime.onMessage.addListener(function (data) {
       .catch(function (e) {
         logger.error(e);
         updateIcon('disabled');
-        browser.runtime.sendMessage({ action: 'pushError', message: 'Failed to push bookmark data' });
+        browser.runtime.sendMessage({ action: 'pushError', message: formatRejection(e, 'Failed to push bookmark data') });
       });
   } else if (data.action === 'pull') {
     updateIcon('syncing');
     manager.pull()
       .then(function () {
-        return saveSettings();
+        return SaveData.saveSettings();
       })
       .then(function () {
         browser.runtime.sendMessage({ action: 'pullComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer, compression: manager.compression });
@@ -118,13 +124,13 @@ browser.runtime.onMessage.addListener(function (data) {
       .catch(function (e) {
         logger.error(e);
         updateIcon('disabled');
-        browser.runtime.sendMessage({ action: 'pushError', message: 'Failed to pull bookmark data' });
+        browser.runtime.sendMessage({ action: 'pullError', message: formatRejection(e, 'Failed to pull bookmark data') });
       });
   } else if (data.action === 'sync') {
     updateIcon('syncing');
     manager.sync()
       .then(function () {
-        return saveSettings();
+        return SaveData.saveSettings();
       })
       .then(function () {
         browser.runtime.sendMessage({ action: 'syncComplete', lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer, compression: manager.compression });
@@ -135,6 +141,7 @@ browser.runtime.onMessage.addListener(function (data) {
       .catch(function (e) {
         logger.error(e);
         updateIcon('disabled');
+        browser.runtime.sendMessage({ action: 'syncError', message: formatRejection(e, 'Failed to sync bookmark data') });
       });
   } else if (data.action === 'getProfiles') {
     manager.resetSyncRate();
@@ -146,16 +153,16 @@ browser.runtime.onMessage.addListener(function (data) {
             browser.runtime.sendMessage({ action: 'getProfilesComplete', profiles: profiles, selectedProfile: manager.profilePath, syncRate: manager.syncRate, lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
           });
       })
-      .catch(function (err) {
-        logger.error(err);
-        browser.runtime.sendMessage({ action: 'getProfilesError', message: 'Could not retrieve profiles' });
+      .catch(function (e) {
+        logger.error(e);
+        browser.runtime.sendMessage({ action: 'getProfilesError', message: formatRejection(e, 'Could not retrieve profiles') });
       });
   } else if (data.action === 'selectProfile') {
     updateIcon('syncing');
     manager.profilePath = data.profilePath;
     manager.resetSyncRate();
 
-    saveSettings()
+    SaveData.saveSettings()
       .then(function () {
         browser.runtime.sendMessage({ action: 'selectProfileComplete', selectedProfile: manager.profilePath, lastSyncTime: manager.lastSyncTime });
       })
@@ -165,7 +172,7 @@ browser.runtime.onMessage.addListener(function (data) {
       .catch(function (e) {
         logger.error(e);
         updateIcon('disabled');
-        browser.runtime.sendMessage({ action: 'pushError', message: 'An error occured while selecting profile' });
+        browser.runtime.sendMessage({ action: 'selectProfileError', message: formatRejection(e, 'An error occured while selecting profile') });
       });
   } else if (data.action === 'createProfile') {
     updateIcon('syncing');
@@ -176,7 +183,7 @@ browser.runtime.onMessage.addListener(function (data) {
       .then(function () {
         return manager.getProfiles()
           .then(function (profiles) {
-            return saveSettings()
+            return SaveData.saveSettings()
               .then(function () {
                 browser.runtime.sendMessage({ action: 'createProfileComplete', profiles: profiles, selectedProfile: manager.profilePath });
               });
@@ -188,113 +195,61 @@ browser.runtime.onMessage.addListener(function (data) {
       .catch(function (e) {
         logger.error(e);
         updateIcon('disabled');
-        browser.runtime.sendMessage({ action: 'pushError', message: 'An error occured while creating profile' });
+        browser.runtime.sendMessage({ action: 'createProfileError', message: formatRejection(e, 'An error occured while creating profile') });
       });
     } else if (data.action === 'changeSyncRate') {
       manager.changeSyncRate(data.syncRate);
 
-      saveSettings()
+      SaveData.saveSettings()
         .then(function () {
           browser.runtime.sendMessage({ action: 'changeSyncRateComplete', syncRate: data.syncRate });
         })
         .catch(function (e) {
           logger.error(e);
           updateIcon('disabled');
-          browser.runtime.sendMessage({ action: 'pushError', message: 'An error occured while updating sync interval' });
+          browser.runtime.sendMessage({ action: 'changeSyncRateError', message: formatRejection(e, 'An error occured while updating sync interval') });
         });
     } else if (data.action === 'changeCompression') {
       manager.compression = data.compression;
 
-      saveSettings()
+      SaveData.saveSettings()
         .then(function () {
           browser.runtime.sendMessage({ action: 'changeCompressionComplete', compression: data.compression });
         })
         .catch(function (e) {
           logger.error(e);
           updateIcon('disabled');
-          browser.runtime.sendMessage({ action: 'pushError', message: 'An error occured while changing compression setting' });
+          browser.runtime.sendMessage({ action: 'changeCompressionError', message: formatRejection(e, 'An error occured while changing compression setting') });
         });
     }
 });
 
-function getSettings() {
-  return {
-      migration: '02_compression_setting',
-      profilePath: manager.profilePath,
-      lastSyncTime: manager.lastSyncTime,
-      syncRate: manager.syncRate,
-      provider: manager.provider.getType(),
-      credentials: manager.provider.getCredentials(),
-      compression: manager.compression
-  };
-}
-function saveSettings(settings) {
-  settings = settings || getSettings();
-
-  return browser.storage.local.set({ data: JSON.stringify(settings) }) 
-    .then(function () {
-      logger.log('Settings have been saved', settings);
-    });
-};
-function migrateSettings(settings) {
-  // Migrate settings to a newer version
-  if (!settings.data && settings.accessToken) {
-    // Data param hasn't been added yet (pre 0.3)
-    // Clear out local storage
-    return browser.storage.local.clear()
-      .then(() => {
-        // Inject migration field
-        settings.migration = '00_migration_init';
-        logger.info("Migrated storage to " + settings.migration);
-
-        // Finish migration
-        return migrateSettings({ data: JSON.stringify(settings) })
-          .then((results) => {
-            return saveSettings(settings)
-              .then(() => {
-                return results;
-              });
-          });
-      });
+/**
+ * Takes a Promise rejection and default text, and only returns the rejection if it's a string
+ * (Considering strings to be user-friendly errors)
+ * @param {Error|string} e Rejected value
+ * @param {string} defaultText Fallback text
+ */
+function formatRejection(e, defaultText) {
+  if (typeof e === 'string') {
+    return e;
   } else {
-    if (settings.data) {
-      settings = JSON.parse(settings.data);
-    } else {
-      settings = getSettings();
-    }
-
-    if (settings.migration === '00_migration_init') {
-      settings.provider = 'dropbox';
-      settings.credentials = {
-        accessToken: settings.accessToken
-      };
-
-      // Strip access token field
-      delete settings.accessToken;
-
-      settings.migration = '01_credentials_struct';
-      logger.info("Migrated storage to " + settings.migration);
-    }
-    if (settings.migration === '01_credentials_struct') {
-      settings.compression = true;
-
-      settings.migration = '02_compression_setting';
-    }
-
-    logger.info("Migrations completed");
-
-    return Promise.resolve(settings);
+    return defaultText;
   }
 }
 
-manager.onAutoSyncHook = saveSettings;
+/**
+ * Attach callback hook for auto-sync
+ */
+manager.onAutoSyncHook = function () {
+  SaveData.saveSettings();
+};
 
+
+// Always start the app showing the syncing symbol
 updateIcon('syncing');
 
-browser.storage.local.get()
-  .then(function (results) {
-    return migrateSettings(results);
-  })
+SaveData.loadSettings()
   .then(function (settings) {
     logger.log('Loaded settings:', settings);
     // Store the remembered profile
@@ -336,7 +291,7 @@ browser.storage.local.get()
     }
   })
   .then(function () {
-    return saveSettings();
+    return SaveData.saveSettings();
   })
   .then(function () {
     logger.log('Initialization completed');
@@ -345,3 +300,10 @@ browser.storage.local.get()
     logger.error('Problem launching app', e);
     updateIcon('disabled');
   });
+
+
+// Attach DEBUG to window for non-production build
+if (!PRODUCTION) {
+  Debug.init(manager);
+  window.DEBUG = Debug;
+}

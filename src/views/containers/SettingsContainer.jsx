@@ -7,6 +7,7 @@ import Initialization from 'views/components/Initialization';
 import ManageProfiles from 'views/components/ManageProfiles';
 import Options from 'views/components/Options';
 import Logger from 'util/Logger';
+import Error from 'views/components/Error';
 import './SettingsContainer.scss';
 
 var logger = new Logger('[SettingsContainer.jsx]');
@@ -90,7 +91,7 @@ export default class SettingsContainer extends React.Component {
       this.showPage(Authentication);
     } else if (data.action === 'pushComplete') {
       this.setState({
-        view: this.state.previousView,
+        view: this.getPreviousView(),
         previousView: null,
         totalBookmarks: data.totalBookmarks || 0,
         totalFolders: data.totalFolders || 0,
@@ -98,7 +99,7 @@ export default class SettingsContainer extends React.Component {
       });
     } else if (data.action === 'pullComplete') {
       this.setState({
-        view: this.state.previousView,
+        view: this.getPreviousView(),
         previousView: null,
         totalBookmarks: data.totalBookmarks || 0,
         totalFolders: data.totalFolders || 0,
@@ -107,7 +108,7 @@ export default class SettingsContainer extends React.Component {
       });
     } else if (data.action === 'syncComplete') {
       this.setState({
-        view: this.state.previousView,
+        view: this.getPreviousView(),
         previousView: null,
         totalBookmarks: data.totalBookmarks || 0,
         totalFolders: data.totalFolders || 0,
@@ -121,7 +122,7 @@ export default class SettingsContainer extends React.Component {
     }
 
     if (data.action.match(/Error$/g)) {
-      this.setState({ view: this.state.previousView, errors: [data.message]});
+      this.setState({ view: this.getPreviousView(), errors: [data.message]});
     } else {
       this.setState({ errors: []});
     }
@@ -132,27 +133,27 @@ export default class SettingsContainer extends React.Component {
   }
   onAuth(params) {
     browser.runtime.sendMessage({ action: 'auth', provider: params.provider, credentials: params.credentials });
-    this.setState({ view: Initialization, previousView: this.state.view });
+    this.setState({ view: Initialization, previousView: this.getPreviousView() });
   }
   onDeauth(params) {
     browser.runtime.sendMessage({ action: 'deauth' });
-    this.setState({ view: Initialization, previousView: this.state.view });
+    this.setState({ view: Initialization, previousView: this.getPreviousView() });
   }
   onSync() {
     browser.runtime.sendMessage({ action: 'sync' });
-    this.setState({ view: Initialization, previousView: this.state.view });
+    this.setState({ view: Initialization, previousView: this.getPreviousView() });
   }
   onPush() {
     browser.runtime.sendMessage({ action: 'push' });
-    this.setState({ view: Initialization, previousView: this.state.view });
+    this.setState({ view: Initialization, previousView: this.getPreviousView() });
   }
   onPull() {
     browser.runtime.sendMessage({ action: 'pull' });
-    this.setState({ view: Initialization, previousView: this.state.view });
+    this.setState({ view: Initialization, previousView: this.getPreviousView() });
   }
   onCreateProfile(params) {
     browser.runtime.sendMessage({ action: 'createProfile', name: params.name });
-    this.setState({ view: Initialization, previousView: this.state.view });
+    this.setState({ view: Initialization, previousView: this.getPreviousView() });
   }
   onSelectProfile(params) {
     browser.runtime.sendMessage({ action: 'selectProfile', profilePath: params.profilePath });
@@ -162,6 +163,15 @@ export default class SettingsContainer extends React.Component {
   }
   onChangeCompression(params) {
     browser.runtime.sendMessage({ action: 'changeCompression', compression: params.compression });
+  }
+  getPreviousView() {
+    if (this.state.previousView === Initialization) {
+      // A problem must have occured, show auth screen
+      return Authentication;
+    } else {
+      // Show whatever the previous view was
+      return this.state.previousView;
+    }
   }
 
   render() {
@@ -250,6 +260,7 @@ export default class SettingsContainer extends React.Component {
           onPull={this.onPull.bind(this)}
           onChangeSyncRate={this.onChangeSyncRate.bind(this)}
           onChangeCompression={this.onChangeCompression.bind(this)} />
+        <Error message={this.state.errors[0] || ''}/>
       </section>
     );
   }
