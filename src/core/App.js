@@ -175,6 +175,10 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'selectProfileError', message: formatRejection(e, 'An error occured while selecting profile') });
       });
   } else if (data.action === 'createProfile') {
+    if (!data.name.match(/^[\w\-. ]+$/g)) {
+      browser.runtime.sendMessage({ action: 'createProfileError', message: 'Invalid profile name: ' + data.name });
+      return;
+    }
     updateIcon('syncing');
     manager.profilePath = '/' + data.name + '.syncmarx';
     manager.resetSyncRate();
