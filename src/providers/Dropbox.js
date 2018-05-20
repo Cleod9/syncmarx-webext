@@ -37,6 +37,14 @@ export default class Dropbox extends StorageProvider {
         this.profiles = response.entries;
 
         return response.entries;
+      })
+      .catch((error) => {
+        if (error && typeof error.error === 'string' && error.error.match(/malformed/g)) {
+          throw 'Auth token is malformed';
+        } else if (error && typeof error.error === 'object' && typeof error.error.error === 'object' && error.error.error['.tag'] === "invalid_access_token") {
+          throw 'Invalid authorization token';
+        }
+        throw error;
       });
   }
   fileUpload(data) {

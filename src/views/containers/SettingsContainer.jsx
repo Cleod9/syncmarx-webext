@@ -42,7 +42,7 @@ export default class SettingsContainer extends React.Component {
   onMessage(data) {
     if (data.action === 'initComplete') {
       if (data.authorized) {
-        this.setState({ authorized: true, compression: data.compression });
+        this.setState({ authorized: true, compression: data.compression, previousView: Home });
 
         browser.runtime.sendMessage({ action: 'getProfiles' });
       } else {
@@ -75,10 +75,7 @@ export default class SettingsContainer extends React.Component {
       this.setState({ syncRate: data.syncRate });
       this.showPage(Options);
     } else if (data.action === 'authComplete') {
-      this.setState({ 
-        authorized: true,
-        view: Home
-      });
+      this.setState({ authorized: true });
       this.showPage(Home);
       browser.runtime.sendMessage({ action: 'getProfiles' });
     } else if (data.action === 'deauthComplete') {
@@ -129,31 +126,31 @@ export default class SettingsContainer extends React.Component {
   }
 
   showPage(page) {
-    this.setState({ view: page });
+    this.setState({ view: page, previousView: this.state.view });
   }
   onAuth(params) {
     browser.runtime.sendMessage({ action: 'auth', provider: params.provider, credentials: params.credentials });
-    this.setState({ view: Initialization, previousView: this.getPreviousView() });
+    this.showPage(Initialization);
   }
   onDeauth(params) {
     browser.runtime.sendMessage({ action: 'deauth' });
-    this.setState({ view: Initialization, previousView: this.getPreviousView() });
+    this.showPage(Initialization);
   }
   onSync() {
     browser.runtime.sendMessage({ action: 'sync' });
-    this.setState({ view: Initialization, previousView: this.getPreviousView() });
+    this.showPage(Initialization);
   }
   onPush() {
     browser.runtime.sendMessage({ action: 'push' });
-    this.setState({ view: Initialization, previousView: this.getPreviousView() });
+    this.showPage(Initialization);
   }
   onPull() {
     browser.runtime.sendMessage({ action: 'pull' });
-    this.setState({ view: Initialization, previousView: this.getPreviousView() });
+    this.showPage(Initialization);
   }
   onCreateProfile(params) {
     browser.runtime.sendMessage({ action: 'createProfile', name: params.name });
-    this.setState({ view: Initialization, previousView: this.getPreviousView() });
+    this.showPage(Initialization);
   }
   onSelectProfile(params) {
     browser.runtime.sendMessage({ action: 'selectProfile', profilePath: params.profilePath });
@@ -194,7 +191,7 @@ export default class SettingsContainer extends React.Component {
                       'd-none': (this.state.authorized) ? true : false
                     })
                   }
-                  onClick={() => { this.setState({ view: Authentication })}}
+                  onClick={() => { this.showPage(Authentication)}}
                   >
                   <input type="radio" name="SettingsContainer-navBar" id="SettingsContainer-nav1" autoComplete="off" defaultChecked={this.state.view === Authentication}/> Setup
                 </label>
@@ -206,7 +203,7 @@ export default class SettingsContainer extends React.Component {
                       'd-none': (this.state.authorized) ? false : true
                     })
                   }
-                  onClick={() => { this.setState({ view: Home })}}
+                  onClick={() => { this.showPage(Home)}}
                   >
                   <input type="radio" name="SettingsContainer-navBar" id="SettingsContainer-nav1" autoComplete="off" defaultChecked={this.state.view === Home}/> Home
                 </label>
@@ -218,7 +215,7 @@ export default class SettingsContainer extends React.Component {
                       'd-none': (this.state.authorized) ? false : true
                     })
                   }
-                  onClick={() => { this.setState({ view: ManageProfiles })}}
+                  onClick={() => { this.showPage(ManageProfiles)}}
                   >
                   <input type="radio" name="SettingsContainer-navBar" id="SettingsContainer-nav2" autoComplete="off" defaultChecked={this.state.view === ManageProfiles}/> Profiles
                 </label>
@@ -230,7 +227,7 @@ export default class SettingsContainer extends React.Component {
                       'd-none': (this.state.authorized) ? false : true
                     })
                   }
-                  onClick={() => { this.setState({ view: Options })}}
+                  onClick={() => { this.showPage(Options)}}
                   >
                   <input type="radio" name="SettingsContainer-navBar" id="SettingsContainer-nav3" autoComplete="off" defaultChecked={this.state.view === Options}/> Options
                 </label>
@@ -241,7 +238,7 @@ export default class SettingsContainer extends React.Component {
                       'btn-outline-secondary': this.state.view !== About
                     })
                   }
-                  onClick={() => { this.setState({ view: About })}}
+                  onClick={() => { this.showPage(About)}}
                   >
                   <input type="radio" name="SettingsContainer-navBar" id="SettingsContainer-nav3" autoComplete="off" defaultChecked={this.state.view === About}/> About
                 </label>
