@@ -41,6 +41,34 @@ var Promise_each = function(arr, fn) { // take an array and a function
   }, Promise.resolve());
 }
 
+/**
+ * Takes a given bookmark and converts the url to something usable by Firefox
+ */
+var incomingChromeUrlFix = function (bookmark) {
+  if (BROWSER_NAME === 'firefox' && bookmark.url && bookmark.url.match(/^chrome:\/\//)) {
+    logger.log("Fixing incoming chrome url for Firefox: " , bookmark);
+
+    // Firefox has issue with some chrome:// urls. Let's perform a failsafe
+    bookmark.url = bookmark.url.replace(/^chrome:\/\//, 'http://chrome//');
+
+    return browser.bookmarks.create(bookmark);
+  } else {
+    throw e;
+  }
+};
+
+/**
+ * Takes a given bookmark and converts it to its original url
+ */
+var outgoingUrlFix = function (bookmark) {
+  if (BROWSER_NAME === 'firefox' && bookmark.url && bookmark.url.match(/^http:\/\/chrome\/\//)) {
+    logger.log("Fixing outgoing chrome url for Firefox: " , bookmark);
+
+    // Undo failsafe for Firefox chrome:// urls
+    bookmark.url = bookmark.url.replace(/^http:\/\/chrome\/\//, 'chrome://');
+  }
+};
+
 export default class BookmarkManager {
   constructor() {
     this.autoSync = this.autoSync.bind(this);
@@ -105,6 +133,11 @@ export default class BookmarkManager {
     return this.provider.authorize(credentials)
       .then(() => {
         return this.getProfiles();
+      })
+      .catch((e) => {
+        // Reset to empty Dropbox provider
+        this.provider = new Dropbox();
+        throw e;
       });
   }
 
@@ -373,6 +406,8 @@ BookmarkManager.treeNodesToJSON = function (node) {
     data.url = node.url;
   }
 
+  outgoingUrlFix(data);
+
   if (node.children) {
     // This is a folder so we need to find all children
     for (var i = 0; i < node.children.length; i++) {
@@ -545,6 +580,9 @@ BookmarkManager.applyDeltaCreateHelper = function (node, parentNode) {
   }
 
   return browser.bookmarks.create(bookmark)
+    .catch((e) => {
+      return incomingChromeUrlFix(bookmark);
+    })
     .then((createdNode) => {
       // Recursively create children 
       return Promise_each(node.children, (child) => {
@@ -569,6 +607,9 @@ BookmarkManager.applyDelta = function (delta) {
       bookmark.url = delta.node.url;
     }
     return browser.bookmarks.create(bookmark)
+      .catch((e) => {
+        return incomingChromeUrlFix(bookmark);
+      })
       .then((node) => {
         // Recursively create children
         return Promise_each(delta.node.children, (child) => {
