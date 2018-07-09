@@ -267,7 +267,7 @@ SaveData.loadSettings()
     }
 
     // Update the sync rate
-    if (settings.syncRate) {
+    if (typeof settings.syncRate === 'number' && settings.syncRate >= 0) {
       manager.changeSyncRate(settings.syncRate);
     }
 

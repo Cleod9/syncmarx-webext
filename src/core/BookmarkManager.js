@@ -14,9 +14,10 @@ var BROWSER_NAME = detect().name;
 var DATA_VERSION = 1; // Versioning for bookmarks data
 
 // Browser-specific names for root folders
-var TOOLBAR_TITLES = /^(Bookmarks Toolbar)|(Bookmarks bar)$/g;
-var MENU_TITLES = /^(Bookmarks Menu)|(Other bookmarks)$/g;
+var MENU_TITLES = /^(Bookmarks Menu)|(Other bookmarks)|(Bookmarks)$/gi;
+var TOOLBAR_TITLES = /^(Bookmarks Toolbar)|(Bookmarks bar)$/gi;
 
+// TODO: Either make an explicit mapping or remove this root map, since it is not used
 var ROOT_MAP = {
   firefox: {
     'toolbar': 'Bookmarks Toolbar',
@@ -216,11 +217,11 @@ export default class BookmarkManager {
         return this.loadLocalData()
           .then(() =>  {
             // Get local data
-            var localToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, this.localData.data, 1);
             var localMenuData = BookmarkManager.findNodeByTitle(MENU_TITLES, this.localData.data, 1);
+            var localToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, this.localData.data, 1);
 
-            // Recursively delete children 
-            return Promise_each(localToolbarData.children, (child) => {
+            // Recursively delete children (Disregard toolbar when null, not all browsers follow same structure)
+            return Promise_each((localToolbarData) ? localToolbarData.children : [], (child) => {
               return BookmarkManager.applyDeltaDeleteHelper(child);
             })
               .then(() => {
@@ -258,20 +259,25 @@ export default class BookmarkManager {
     return this.loadLocalData()
       .then(() => {
         // Get local data
-        var localToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, this.localData.data, 1);
         var localMenuData = BookmarkManager.findNodeByTitle(MENU_TITLES, this.localData.data, 1);
+        var localToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, this.localData.data, 1);
 
         return this.getRemoteData()
           .then((remoteData) => {
-            var remoteToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, remoteData.data, 1);
             var remoteMenuData = BookmarkManager.findNodeByTitle(MENU_TITLES, remoteData.data, 1);
+            var remoteToolbarData = (localToolbarData) ? BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, remoteData.data, 1) : [];
+
+            if (!remoteToolbarData) {
+              // We may need to dig a little deeper in depth (Hack for vivaldi compatibility, since it doesn ot have dedicated bookmarks bar)
+              remoteToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, remoteData.data, 2);
+            }
 
             // Check for deltas between local and remote
-            var toolbarDeltas = BookmarkManager.calculateDeltas(localToolbarData, remoteToolbarData);
             var menuDeltas = BookmarkManager.calculateDeltas(localMenuData, remoteMenuData);
+            var toolbarDeltas = (localToolbarData) ? BookmarkManager.calculateDeltas(localToolbarData, remoteToolbarData) : [];
 
-            logger.info('toolbar deltas:', toolbarDeltas);
             logger.info('menu deltas:', menuDeltas);
+            logger.info('toolbar deltas:', toolbarDeltas);
             
             if (toolbarDeltas.length + menuDeltas.length > 0) {
               // If the remote data is old or equal in age
@@ -483,6 +489,11 @@ BookmarkManager.calculateDeltas = function (localFolder, remoteFolder, deltas) {
   var ignoreHash = {};
   var foundItem = false;
 
+  if (!localFolder) {
+    // This means the folder does not exist locally (likely an incompatible browser with invalid bookmark structure)
+    return deltas;
+  }
+
 
   // Fix all negative indices from the remote (Force to 0)
   // Note: This is more of a precaution, as there was one instance where a -1 index came in
@@ -623,7 +634,12 @@ BookmarkManager.applyDelta = function (delta) {
     })
       .then(() => {
         // Now we can delete self
-        return browser.bookmarks.remove(delta.node.id);
+        if (delta.node.type === 'folder') {
+          // More Efficient removal for folders
+          return browser.bookmarks.removeTree(delta.node.id);
+        } else {
+          return browser.bookmarks.remove(delta.node.id);
+        }
       });
   } else if (delta.type === 'move') {
     return browser.bookmarks.move(delta.node.id, { index: Math.max(0, delta.index) });
@@ -642,6 +658,11 @@ BookmarkManager.applyDeltaDeleteHelper = function (node) {
   })
     .then(() => {
       // Now safe to delete self
-      return browser.bookmarks.remove(node.id);
+      if (node.type === 'folder') {
+        // More Efficient removal for folders
+        return browser.bookmarks.removeTree(node.id);
+      } else {
+        return browser.bookmarks.remove(node.id);
+      }
     });
 };

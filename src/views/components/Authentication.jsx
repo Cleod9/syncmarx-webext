@@ -23,7 +23,7 @@ export default class Authentication extends React.Component {
   link(evt) {
     logger.log("Link clicked");
     var dbx = new Dropbox({ clientId: '1ea74e9vcsu22oz' });
-    var authUrl = dbx.getAuthenticationUrl("https://syncmarx.mcleodgaming.com/auth/dropbox", null, 'code');
+    var authUrl = dbx.getAuthenticationUrl("https://syncmarx.gregmcleod.com/auth/dropbox", null, 'code');
     window.open(authUrl);
   }
   render() {

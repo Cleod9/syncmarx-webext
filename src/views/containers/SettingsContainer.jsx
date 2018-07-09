@@ -53,7 +53,7 @@ export default class SettingsContainer extends React.Component {
       this.setState({
         profiles: data.profiles || this.state.profiles,
         selectedProfile: data.selectedProfile,
-        syncRate: data.syncRate || this.state.syncRate,
+        syncRate: typeof data.syncRate === 'number' ? data.syncRate : this.state.syncRate,
         totalBookmarks: data.totalBookmarks || this.state.totalBookmarks,
         totalFolders: data.totalFolders || this.state.totalFolders,
         lastSyncTime: data.lastSyncTime || this.state.lastSyncTime
