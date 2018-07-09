@@ -206,7 +206,7 @@ browser.runtime.onMessage.addListener(function (data) {
 
       SaveData.saveSettings()
         .then(function () {
-          browser.runtime.sendMessage({ action: 'changeSyncRateComplete', syncRate: data.syncRate });
+          browser.runtime.sendMessage({ action: 'changeSyncRateComplete', syncRate: manager.syncRate });
         })
         .catch(function (e) {
           logger.error(e);

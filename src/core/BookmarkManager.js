@@ -319,6 +319,10 @@ export default class BookmarkManager {
    */
   changeSyncRate(minutes) {
     this.syncRate = minutes;
+    if (this.syncRate > 35791) {
+      // Cap at maximum value
+      this.syncRate = 35791;
+    }
 
     clearInterval(this.syncInterval);
 
