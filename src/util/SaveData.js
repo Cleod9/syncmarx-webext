@@ -112,3 +112,9 @@ export var migrateSettings = function (settings) {
     return Promise.resolve(settings);
   }
 };
+
+export var clearSettings = function () {
+  manager.init();
+
+  return saveSettings();
+};

@@ -18,16 +18,21 @@ export var updateSettings = function (obj) {
     settings[i] = obj[i];
   }
 
-  return saveSettings();
+  return saveSettings(settings);
+};
+
+export var saveSettings = function (settings) {
+  return SaveData.saveSettings(settings)
+    .catch(function (e) {
+      logger.error('Problem saving:', e);
+    });
 };
 
 export var clearProfilePath = function () {
   manager.profilePath = null;
 };
 
-export var saveSettings = function () {
-  return SaveData.saveSettings(settings)
-    .catch(function (e) {
-      logger.error('Problem saving:', e);
-    });
+export var clearSettings = function () {
+  return SaveData.clearSettings();
 };
+

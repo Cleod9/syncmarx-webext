@@ -5,7 +5,9 @@ var LZString = require('lz-string');
 var Cryptr = require('cryptr');
 import Logger from 'util/Logger';
 import StorageProvider from 'providers/StorageProvider';
+
 import Dropbox from 'providers/Dropbox';
+import GoogleDrive from 'providers/GoogleDrive';
 
 var logger = new Logger('[BookmarkManager.js]');
 var detect = require('detect-browser').detect;
@@ -14,8 +16,8 @@ var BROWSER_NAME = detect().name;
 var DATA_VERSION = 1; // Versioning for bookmarks data
 
 // Browser-specific names for root folders
-var MENU_TITLES = /^(Bookmarks Menu)|(Other bookmarks)|(Bookmarks)$/gi;
-var TOOLBAR_TITLES = /^(Bookmarks Toolbar)|(Bookmarks bar)$/gi;
+var MENU_TITLES = /(^Bookmarks Menu$)|(^Other bookmarks$)|(^Bookmarks$)/gi;
+var TOOLBAR_TITLES = /(^Bookmarks Toolbar$)|(^Bookmarks bar$)/gi;
 
 // TODO: Either make an explicit mapping or remove this root map, since it is not used
 var ROOT_MAP = {
@@ -82,7 +84,7 @@ export default class BookmarkManager {
    */
  init() {
     this.provider = new Dropbox();
-    this.profilePath = '';
+    this.profilePath = null;
     this.lastSyncTime = 0;
     this.syncRate = 15; // Default to 15 minutes
     this.syncInterval = 0;
@@ -126,6 +128,8 @@ export default class BookmarkManager {
 
     if (provider === 'dropbox') {
       this.provider = new Dropbox();
+    } else if (provider === 'googledrive') {
+      this.provider = new GoogleDrive();
     } else {
       logger.error('Invalid provider', provider);
       return Promise.reject('Invalid provider');
@@ -143,7 +147,7 @@ export default class BookmarkManager {
   }
 
   /**
-   * Sets acces token for authoriation and performs a test operation via getProfiles()
+   * Sets access token for authoriation and performs a test operation via getProfiles()
    */
   revokeAuth() {
     logger.log("Revoke auth");
@@ -162,7 +166,7 @@ export default class BookmarkManager {
       return Promise.reject('Error cannot retrieve bookmark data, no access token provided');
     }
     
-    return this.provider.filesList('')
+    return this.provider.filesList()
       .then((entries) => {
         this.profiles = entries;
 

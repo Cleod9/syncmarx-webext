@@ -1,5 +1,6 @@
 import Logger from 'util/Logger';
 import StorageProvider from 'providers/StorageProvider';
+import * as _ from 'lodash';
 
 var DropboxCls = require('dropbox').Dropbox;
 var logger = new Logger('[Dropbox.js]');
@@ -16,7 +17,7 @@ export default class Dropbox extends StorageProvider {
     return 'dropbox';
   }
   getCredentials() {
-    return { accessToken: this.dbx.getAccessToken() };
+    return this.dbx.getAccessToken() ? { accessToken: this.dbx.getAccessToken() } : null;
   }
   isAuthed() {
     return this.dbx.getAccessToken() ? true : false;  
@@ -29,12 +30,19 @@ export default class Dropbox extends StorageProvider {
   deauthorize() {
     return this.dbx.authTokenRevoke();
   }
-  filesList(path) {
-    return this.dbx.filesListFolder({path: path})
+  filesList() {
+    return this.dbx.filesListFolder({path: ''})
       .then((response) => {
         logger.log("Data retrieved successfully - DropBox Folder Contents: " , response.entries);
 
-        this.profiles = response.entries;
+        this.profiles = _.map(response.entries, (file) => {
+          return {
+            id: file.id,
+            name: file.name,
+            path_lower: file.path_lower, // TODO: Remove need for this and just use 'id' field
+            path_display: file.path_display
+          };
+        });
 
         return response.entries;
       })

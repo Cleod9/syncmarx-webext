@@ -1,7 +1,8 @@
 {
   "manifest_version": 2,
   "name": "syncmarx",
-  "version": "0.4.0",
+  "version": "0.5.0",
+  "author": "Greg McLeod",
   "description": "Web extension built for cross-browser bookmark syncing to the cloud.",
   "icons": {
     "48": "icons/icon_48.png",
@@ -10,10 +11,13 @@
 
   "permissions": [
     "bookmarks",
-    "webRequest",
-    "*://*.dropboxapi.com/",
+    "https://*.dropboxapi.com/",
+    "https://*.google.com/",
+    "https://*.googleapis.com/",
     "storage"
   ],
+
+  "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
 
   "browser_action": {
     "default_icon": "icons/icon_38.png",
@@ -21,6 +25,7 @@
   },
 
   "background": {
-    "scripts": ["app.js"]
+    "scripts": ["app.js"],
+    "persistent": false
   }
 }

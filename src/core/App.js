@@ -77,15 +77,15 @@ browser.runtime.onMessage.addListener(function (data) {
         logger.error('Problem deauthorizing token', e);
       })
       .then(function () {
-        return browser.storage.local.remove(['accessToken'])
-      })
-      .then(function () {
+        logger.log(manager.provider.getType() + " access token has been removed");
+
         manager.init();
-        logger.log("Dropbox key has been removed")
-        browser.runtime.sendMessage({ action: 'deauthComplete' });
+
+        return SaveData.saveSettings();
       })
       .then(function () {
         updateIcon('disabled');
+        browser.runtime.sendMessage({ action: 'deauthComplete' });
       })
       .catch(function (e) {
         logger.error(e);
