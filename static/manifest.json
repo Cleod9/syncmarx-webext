@@ -17,8 +17,6 @@
     "storage"
   ],
 
-  "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
-
   "browser_action": {
     "default_icon": "icons/icon_38.png",
     "default_title": "syncmarx (alpha)"
