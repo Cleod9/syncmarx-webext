@@ -77,6 +77,9 @@ export default class BookmarkManager {
     this.autoSync = this.autoSync.bind(this);
   
     this.init();
+    
+    // Only run when the class is first created (Used to track drop down on auth page)
+    this.providerDropdown = this.provider.getType();
   }
   
   /**

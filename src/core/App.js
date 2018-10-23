@@ -51,7 +51,7 @@ browser.browserAction.setPopup({
 // Add message listener
 browser.runtime.onMessage.addListener(function (data) {
   if (data.action === 'init') {
-    browser.runtime.sendMessage({ action: 'initComplete', authorized: manager.provider.isAuthed(), compression: manager.compression });
+    browser.runtime.sendMessage({ action: 'initComplete', authorized: manager.provider.isAuthed(), compression: manager.compression, providerDropdown: manager.providerDropdown });
   } else if (data.action === 'auth') {
     updateIcon('syncing');
     manager.auth(data.provider, data.credentials)
@@ -150,7 +150,7 @@ browser.runtime.onMessage.addListener(function (data) {
       .then(function (profiles) {
         return manager.loadLocalData()
           .then(() => {
-            browser.runtime.sendMessage({ action: 'getProfilesComplete', profiles: profiles, selectedProfile: manager.profilePath, syncRate: manager.syncRate, lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
+            browser.runtime.sendMessage({ action: 'getProfilesComplete', profiles: profiles, selectedProfile: manager.profilePath, provider: manager.provider.getType(), syncRate: manager.syncRate, lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
           });
       })
       .catch(function (e) {
@@ -225,6 +225,17 @@ browser.runtime.onMessage.addListener(function (data) {
           updateIcon('disabled');
           browser.runtime.sendMessage({ action: 'changeCompressionError', message: formatRejection(e, 'An error occured while changing compression setting') });
         });
+    } else if (data.action === 'changeProviderDropdown') {
+      manager.providerDropdown = data.providerDropdown;
+
+      SaveData.saveSettings()
+        .then(function () {
+          browser.runtime.sendMessage({ action: 'changeProviderDropdownComplete', providerDropdown: manager.providerDropdown });
+        })
+        .catch(function (e) {
+          logger.error(e);
+          browser.runtime.sendMessage({ action: 'changeProviderDropdownError', message: formatRejection(e, 'An error occured while selecting provider') });
+        });
     }
 });
 
@@ -273,6 +284,9 @@ SaveData.loadSettings()
 
     // Update the compression setting
     manager.compression = (settings.compression) ? true : false;
+
+    // Update the provider dropdown setting
+    manager.providerDropdown = settings.providerDropdown;
 
     // Test login to Dropbox
     if (settings.credentials) {

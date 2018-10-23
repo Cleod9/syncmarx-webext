@@ -30,13 +30,14 @@ export var loadSettings = function () {
  */
 export var getSettings = function () {
   return {
-      migration: '02_compression_setting',
+      migration: '03_dropdown_setting',
       profilePath: manager.profilePath,
       lastSyncTime: manager.lastSyncTime,
       syncRate: manager.syncRate,
       provider: manager.provider.getType(),
       credentials: manager.provider.getCredentials(),
-      compression: manager.compression
+      compression: manager.compression,
+      providerDropdown: manager.providerDropdown
   };
 };
 
@@ -105,6 +106,12 @@ export var migrateSettings = function (settings) {
       settings.compression = true;
 
       settings.migration = '02_compression_setting';
+    }
+    if (settings.migration === '02_compression_setting') {
+      // Add providerDropdown field
+      settings.providerDropdown = 'dropbox';
+
+      settings.migration = '03_dropdown_setting';
     }
 
     logger.info("Migrations completed");

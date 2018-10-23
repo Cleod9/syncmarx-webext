@@ -24,6 +24,8 @@ export default class SettingsContainer extends React.Component {
       previousView: Initialization,
       // Default settings
       profiles: [],
+      provider: null,
+      providerDropdown: 'dropbox',
       selectedProfile: null,
       lastSyncTime: 0,
       authorized: false,
@@ -42,17 +44,18 @@ export default class SettingsContainer extends React.Component {
   onMessage(data) {
     if (data.action === 'initComplete') {
       if (data.authorized) {
-        this.setState({ authorized: true, compression: data.compression, previousView: Home });
+        this.setState({ authorized: true, compression: data.compression, previousView: Home, providerDropdown: data.providerDropdown });
 
         browser.runtime.sendMessage({ action: 'getProfiles' });
       } else {
-        this.setState({ view: Authentication, compression: data.compression });
+        this.setState({ view: Authentication, compression: data.compression, providerDropdown: data.providerDropdown });
       }
       logger.log('panel initialized');
     } else if (data.action === 'getProfilesComplete' || data.action === 'createProfileComplete') {
       this.setState({
         profiles: data.profiles || this.state.profiles,
         selectedProfile: data.selectedProfile,
+        provider: data.provider || this.state.provider,
         syncRate: typeof data.syncRate === 'number' ? data.syncRate : this.state.syncRate,
         totalBookmarks: data.totalBookmarks || this.state.totalBookmarks,
         totalFolders: data.totalFolders || this.state.totalFolders,
@@ -161,6 +164,9 @@ export default class SettingsContainer extends React.Component {
   onChangeCompression(params) {
     browser.runtime.sendMessage({ action: 'changeCompression', compression: params.compression });
   }
+  onProviderDropdownChanged(params) {
+    browser.runtime.sendMessage({ action: 'changeProviderDropdown', providerDropdown: params.providerDropdown });
+  }
   getPreviousView() {
     if (this.state.previousView === Initialization) {
       // A problem must have occured, show auth screen
@@ -256,7 +262,8 @@ export default class SettingsContainer extends React.Component {
           onPush={this.onPush.bind(this)}
           onPull={this.onPull.bind(this)}
           onChangeSyncRate={this.onChangeSyncRate.bind(this)}
-          onChangeCompression={this.onChangeCompression.bind(this)} />
+          onChangeCompression={this.onChangeCompression.bind(this)}
+          onProviderDropdownChanged={this.onProviderDropdownChanged.bind(this)} />
         <Error message={this.state.errors[0] || ''}/>
       </section>
     );

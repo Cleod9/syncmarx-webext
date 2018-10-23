@@ -50,6 +50,15 @@ export default class Options extends React.Component {
       this.props.onChangeCompression({ compression: this.refs.compression.checked });
     }
   }
+  getProviderName() {
+    if (this.props.params.provider === 'dropbox') {
+      return 'Dropbox'
+    } else if (this.props.params.provider === 'googledrive') {
+      return 'Google Drive';
+    } else {
+      return 'Provider';
+    }
+  }
   
   render() {
     var uid = 'uid' + Math.random();
@@ -79,7 +88,7 @@ export default class Options extends React.Component {
                     </div>
                   </div>
                 </div>
-                <button id="deauth" className="btn btn-danger btn-sm" type="button" onClick={(evt) => { this.onUnlink(evt); }}>Unlink From Dropbox</button>
+                <button id="deauth" className="btn btn-danger btn-sm" type="button" onClick={(evt) => { this.onUnlink(evt); }}>Unlink From {this.getProviderName()}</button>
               </div>
             );
           }

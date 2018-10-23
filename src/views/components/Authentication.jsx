@@ -29,8 +29,13 @@ export default class Authentication extends React.Component {
       }
     }
   }
-  link(evt) {
+  onProviderDropdownChanged(evt) {
     logger.log("Selected provider", this.refs.provider.value);
+
+    this.props.onProviderDropdownChanged({ providerDropdown: this.refs.provider.value });
+  }
+  link(evt) {
+    logger.log("Retrieving token for provider", this.refs.provider.value);
 
     let value = this.refs.provider.value;
 
@@ -54,7 +59,7 @@ export default class Authentication extends React.Component {
         <h5 className="mb-3">Setup</h5>
         <div className="mb-3">
           <h6><strong>Choose a Service Provider:</strong></h6>
-          <select ref="provider">
+          <select ref="provider" defaultValue={this.props.params.providerDropdown} onChange={(evt) => {this.onProviderDropdownChanged(evt) }}>
             <option value="dropbox">Dropbox</option>
             <option value="googledrive">Google Drive</option>
           </select> <button id="link" className="btn btn-info btn-sm" onClick={(evt) => { this.link(evt); }}>Get Token</button>
