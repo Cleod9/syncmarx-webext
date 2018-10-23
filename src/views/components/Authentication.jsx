@@ -41,13 +41,13 @@ export default class Authentication extends React.Component {
 
     if (value === 'dropbox') {
       let dbx = new Dropbox({ clientId: '1ea74e9vcsu22oz' });
-      let authUrl = dbx.getAuthenticationUrl("https://syncmarx.gregmcleod.com/auth/dropbox", null, 'code');
+      let redirect_uri = PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/dropbox' : 'http://localhost:1800/auth/dropbox';
+      let authUrl = dbx.getAuthenticationUrl(redirect_uri, null, 'code');
       window.open(authUrl);
     } else if (value === 'googledrive') {
       let scope = 'https://www.googleapis.com/auth/drive.appdata';
       let client_id = '230145339685-4smjsndovcf1l9ohdh59bl52pgvgmnga';
-      //let redirect_uri = 'https://syncmarx.gregmcleod.com/auth/googledrive';
-      let redirect_uri = 'http://localhost:1800/auth/googledrive';
+      let redirect_uri = PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/googledrive' : 'http://localhost:1800/auth/googledrive';
       let authUrl = `https://accounts.google.com/o/oauth2/v2/auth?scope=${scope}&response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&prompt=consent&access_type=offline`;
 
       window.open(authUrl);
