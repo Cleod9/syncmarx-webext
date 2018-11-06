@@ -29,7 +29,7 @@ export default class Options extends React.Component {
       dialog: (
         <Confirm 
           title="WARNING"
-          message="This cannot be undone, and you will have to re-link to Dropbox again from scratch in the future. Are you sure?"
+          message={`This cannot be undone, and you will have to re-link to ${this.getProviderName()} again from scratch in the future. (Your local bookmarks will not be deleted). Are you sure?`}
           onConfirm={this.deauthConfirmed.bind(this)}
           onCancel={this.dialogCancelled.bind(this)}
           />

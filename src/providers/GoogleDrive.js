@@ -81,21 +81,70 @@ export default class GoogleDrive extends StorageProvider {
         logger.log('Token info:', response.data);
       });
   }
-  filesList() {
+  getOrCreateAppFolder() {
+    // Make sure a folder exists on the drive to place data
     return this.checkRefreshToken()
       .then(() => {
         return axios({
           method: 'get',
           url: 'https://www.googleapis.com/drive/v3/files',
-          params: {
-            spaces: 'appDataFolder'
-          },
+          headers: { 'Authorization': 'Bearer ' + this.accessToken }
+        })
+        .then((response) => {
+          logger.log(response.data.files);
+
+          let fullFileList = response.data.files;
+
+          // Extract folders from list
+          let appFolder = _.find(response.data.files, (file) => {
+            return file.mimeType === 'application/vnd.google-apps.folder' && file.name === 'syncmarx';
+          });
+
+          if (appFolder) {
+            logger.log('App folder found:', appFolder);
+            return appFolder;
+          } else {
+            logger.log('App folder not found, creating new one...');
+
+            return axios({
+              method: 'POST',
+              url: 'https://www.googleapis.com/drive/v3/files',
+              headers: { 'Authorization': 'Bearer ' + this.accessToken },
+              data: {
+                name: 'syncmarx',
+                mimeType: 'application/vnd.google-apps.folder'
+              }
+            }).then((response) => {
+              logger.log('App folder created: ', response.data);
+    
+              return response.data;
+            });
+          }
+        });
+      })
+  }
+  filesList() {
+    return this.checkRefreshToken()
+      .then(() => {
+        return this.getOrCreateAppFolder();
+      })
+      .then(() => {
+        return axios({
+          method: 'get',
+          url: 'https://www.googleapis.com/drive/v3/files',
           headers: { 'Authorization': 'Bearer ' + this.accessToken }
         })
       })
       .then((response) => {
-        console.log(response.data.files);
-        return _.map(response.data.files, (file) => {
+        logger.log(response.data.files);
+
+        // Extract files from list
+        let filesFound = _.filter(response.data.files, (file) => {
+          return file.mimeType !== 'application/vnd.google-apps.folder';
+        });
+
+        // Return the files in usable format
+        return _.map(filesFound, (file) => {
           return {
             id: file.id,
             name: file.name,
@@ -112,8 +161,15 @@ export default class GoogleDrive extends StorageProvider {
     var file = new Blob([encryptedData], {"type": "text/plain"});
     var fileName = data.path.replace(/^\//g, '');
 
+    let appFolder = null;
+
     return this.checkRefreshToken()
       .then(() => {
+        return this.getOrCreateAppFolder();
+      })
+      .then((folder) => {
+        appFolder = folder;
+
         // Get existing file list first
         return this.filesList();
       })
@@ -122,11 +178,20 @@ export default class GoogleDrive extends StorageProvider {
         let existingFile = _.find(files, (f) => '/' + f.name === data.path);
 
         // Choose appropriate method and URL based on create VS update
-        let method = existingFile ? 'PUT' : 'POST';
+        let method = existingFile ? 'PATCH' : 'POST';
         let url = 'https://www.googleapis.com/upload/drive/v3/files';
 
         if (existingFile) {
           url += `/${existingFile.id}`;
+        }
+
+        let metadata = {
+          name: fileName,
+          mimeType: 'text/plain'      
+        };
+
+        if (!existingFile) {
+          metadata.parents = [appFolder.id];    
         }
 
         // Intitiate the upload
@@ -136,11 +201,7 @@ export default class GoogleDrive extends StorageProvider {
           params: {
             uploadType: 'resumable',
           },
-          data: {
-            name: fileName,
-            mimeType: 'text/plain',
-            parents: ['appDataFolder']          
-          },
+          data: metadata,
           headers: {
             'Authorization': 'Bearer ' + this.accessToken,
             'Content-Type': 'application/json; charset=UTF-8',
@@ -150,7 +211,7 @@ export default class GoogleDrive extends StorageProvider {
         });
       })
       .then((response) => {
-        console.info(response);
+        logger.info(response);
         
         // Upload the file
         return axios({
@@ -166,7 +227,7 @@ export default class GoogleDrive extends StorageProvider {
         })
       })
       .then((response) => {
-        console.info(response);
+        logger.info(response);
       });
   }
   fileDownload(data) {
