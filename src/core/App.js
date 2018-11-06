@@ -151,11 +151,13 @@ browser.runtime.onMessage.addListener(function (data) {
         return manager.loadLocalData()
           .then(() => {
             browser.runtime.sendMessage({ action: 'getProfilesComplete', profiles: profiles, selectedProfile: manager.profilePath, provider: manager.provider.getType(), syncRate: manager.syncRate, lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
+            updateIcon('normal');
           });
       })
       .catch(function (e) {
         logger.error(e);
         browser.runtime.sendMessage({ action: 'getProfilesError', message: formatRejection(e, 'Could not retrieve profiles') });
+        updateIcon('disabled');
       });
   } else if (data.action === 'selectProfile') {
     updateIcon('syncing');

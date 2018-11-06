@@ -55,30 +55,41 @@ export default class GoogleDrive extends StorageProvider {
         access_token: this.accessToken
       }
     })
-      .catch(() => {
-        logger.log('Access token expired. Attempting to fetch new token...');
-        
-        // Token invalid, get new refresh token
-        return axios({
-          method: 'post',
-          url: PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/googledrive/refreshtoken' : 'http://localhost:1800/auth/googledrive/refreshtoken',
-          params: {
-            refresh_token: this.refreshToken
-          },
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          }
-        })
-        .then((response) => {
-          this.accessToken = response.data.access_token;
+      .catch((error) => {
+        // Handle specific case of an invalid token
+        if (error.response && error.response.status === 400) {
+          logger.log('Access token expired. Attempting to fetch new token...');
+          
+          // Token invalid, get new refresh token
+          return axios({
+            method: 'post',
+            url: PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/googledrive/refreshtoken' : 'http://localhost:1800/auth/googledrive/refreshtoken',
+            params: {
+              refresh_token: this.refreshToken
+            },
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            }
+          })
+          .then((response) => {
+            this.accessToken = response.data.access_token;
 
-          logger.log('Obtained new token!');
+            logger.log('Obtained new token!');
 
-          return response;
-        });
+            return response;
+          });
+        } else {
+          logger.error('Problem checking token', error);
+          // Pass error along
+          throw error;
+        }
       })
       .then((response) => {
-        logger.log('Token info:', response.data);
+        if (response) {
+          logger.log('Token info:', response.data);
+        } else {
+          throw new Error('No response from provider');
+        }
       });
   }
   getOrCreateAppFolder() {

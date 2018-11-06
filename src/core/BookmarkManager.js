@@ -139,9 +139,6 @@ export default class BookmarkManager {
     }
     
     return this.provider.authorize(credentials)
-      .then(() => {
-        return this.getProfiles();
-      })
       .catch((e) => {
         // Reset to empty Dropbox provider
         this.provider = new Dropbox();
