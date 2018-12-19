@@ -32,13 +32,21 @@ export default class GoogleDrive extends StorageProvider {
   deauthorize() {
     return this.checkRefreshToken()
       .then(() => {
+        // Notes:
+        // Revoke will remove access to the entire app for Google. We cannot call this endpoint without breaking other instances of this extension
+        // The access token will just expire on its own over time and without the refresh token in memory can never be revived
+        /*
         return axios({
-          method: 'get',
+          method: 'post',
           url: 'https://accounts.google.com/o/oauth2/revoke',
           params: {
             token: this.accessToken
+          },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
           }
         });
+        */
       })
       .then(() => {
         this.accessToken = null;
@@ -50,7 +58,7 @@ export default class GoogleDrive extends StorageProvider {
 
     return axios({
       method: 'get',
-      url: 'https://www.googleapis.com/oauth2/v1/tokeninfo',
+      url: 'https://www.googleapis.com/oauth2/v3/tokeninfo',
       params: {
         access_token: this.accessToken
       }
