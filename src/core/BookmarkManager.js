@@ -45,9 +45,9 @@ var Promise_each = function(arr, fn) { // take an array and a function
 }
 
 /**
- * Takes a given bookmark and converts the url to something usable by Firefox
+ * Takes a given bookmark and converts the url to something usable by the browser vendor
  */
-var incomingChromeUrlFix = function (bookmark) {
+var incomingUrlFixer = function (bookmark, originalNode) {
   if (BROWSER_NAME === 'firefox' && bookmark.url && bookmark.url.match(/^chrome:\/\//)) {
     logger.log("Fixing incoming chrome url for Firefox: " , bookmark);
 
@@ -55,8 +55,15 @@ var incomingChromeUrlFix = function (bookmark) {
     bookmark.url = bookmark.url.replace(/^chrome:\/\//, 'http://chrome//');
 
     return browser.bookmarks.create(bookmark);
+  } else if (BROWSER_NAME === 'firefox' && originalNode.type === 'separator') {
+    // Hack for Firefox ('separator' is technically not a standard, valid type)
+    logger.log("Fixing incoming separator for Firefox: " , bookmark);
+
+    bookmark.type = 'separator';
+
+    return browser.bookmarks.create(bookmark);
   } else {
-    throw e;
+    throw new Error("Incompatible bookmark format");
   }
 };
 
@@ -600,7 +607,8 @@ BookmarkManager.applyDeltaCreateHelper = function (node, parentNode) {
 
   return browser.bookmarks.create(bookmark)
     .catch((e) => {
-      return incomingChromeUrlFix(bookmark);
+      // Something went wrong, attempt to fix
+      return incomingUrlFixer(bookmark, node);
     })
     .then((createdNode) => {
       // Recursively create children 
@@ -627,7 +635,8 @@ BookmarkManager.applyDelta = function (delta) {
     }
     return browser.bookmarks.create(bookmark)
       .catch((e) => {
-        return incomingChromeUrlFix(bookmark);
+        // Something went wrong, attempt to fix
+        return incomingUrlFixer(bookmark, delta.node);
       })
       .then((node) => {
         // Recursively create children
