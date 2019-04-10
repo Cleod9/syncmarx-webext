@@ -8,6 +8,7 @@ import StorageProvider from 'providers/StorageProvider';
 
 import Dropbox from 'providers/Dropbox';
 import GoogleDrive from 'providers/GoogleDrive';
+import Box from 'providers/Box';
 
 var logger = new Logger('[BookmarkManager.js]');
 var detect = require('detect-browser').detect;
@@ -140,6 +141,8 @@ export default class BookmarkManager {
       this.provider = new Dropbox();
     } else if (provider === 'googledrive') {
       this.provider = new GoogleDrive();
+    } else if (provider === 'box') {
+      this.provider = new Box();
     } else {
       logger.error('Invalid provider', provider);
       return Promise.reject('Invalid provider');
@@ -371,8 +374,10 @@ export default class BookmarkManager {
     } else if (!this.profilePath) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
     }
+    // TODO: Phase out profilePath to use ID
+    var activeProfile = _.find(this.profiles, (profile) => '/' + profile.name === this.profilePath) || {};
 
-    return this.provider.fileDownload({path: this.profilePath })
+    return this.provider.fileDownload({path: this.profilePath, id: activeProfile.id })
       .then((result) => {
         logger.log('File contents!', result);
 

@@ -21,11 +21,16 @@ export default class Authentication extends React.Component {
 
       if (value === 'dropbox') {
         this.props.onAuth({ provider: 'dropbox', credentials: { accessToken: this.refs.codeText.value } });
-      } else {
+      } else if (value === 'googledrive') {
         let tokenList = this.refs.codeText.value.split(':');
         let accessToken = tokenList[0];
         let refreshToken = tokenList[1];
         this.props.onAuth({ provider: 'googledrive', credentials: { accessToken: accessToken, refreshToken: refreshToken } });
+      } else if (value === 'box') {
+        let tokenList = this.refs.codeText.value.split(':');
+        let accessToken = tokenList[0];
+        let refreshToken = tokenList[1];
+        this.props.onAuth({ provider: 'box', credentials: { accessToken: accessToken, refreshToken: refreshToken } });
       }
     }
   }
@@ -51,6 +56,13 @@ export default class Authentication extends React.Component {
       let authUrl = `https://accounts.google.com/o/oauth2/v2/auth?scope=${scope}&response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&prompt=consent&access_type=offline`;
 
       window.open(authUrl);
+    } else if (value === 'box') {
+      let client_id = PRODUCTION ? 'rjgyteu1uzgjmxpe34x5pj6fw0ndyzy5' : '1j91a6cw6wb2g71venpu6s1fgectc4wr';
+      let redirect_uri = PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/box' : 'http://localhost:1800/auth/box';
+      let security_key = '00aed913eeff4bd7a72565c0a5594b6a';
+      let authUrl = `https://account.box.com/api/oauth2/authorize?response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&state=${security_key}`;
+
+      window.open(authUrl);
     }
   }
   render() {
@@ -62,6 +74,7 @@ export default class Authentication extends React.Component {
           <select ref="provider" defaultValue={this.props.params.providerDropdown} onChange={(evt) => {this.onProviderDropdownChanged(evt) }}>
             <option value="dropbox">Dropbox</option>
             <option value="googledrive">Google Drive</option>
+            <option value="box">Box</option>
           </select> <button id="link" className="btn btn-info btn-sm" onClick={(evt) => { this.link(evt); }}>Get Token</button>
         </div>
         <div className="input-group mb-4">

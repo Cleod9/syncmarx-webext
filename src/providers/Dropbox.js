@@ -35,7 +35,8 @@ export default class Dropbox extends StorageProvider {
       .then((response) => {
         logger.log("Data retrieved successfully - DropBox Folder Contents: " , response.entries);
 
-        this.profiles = _.map(response.entries, (file) => {
+        // TODO: Make sure this still works (was returning the not formatted data before)
+        return _.map(response.entries, (file) => {
           return {
             id: file.id,
             name: file.name,
@@ -43,8 +44,6 @@ export default class Dropbox extends StorageProvider {
             path_display: file.path_display
           };
         });
-
-        return response.entries;
       })
       .catch((error) => {
         if (error && typeof error.error === 'string' && error.error.match(/malformed/g)) {
