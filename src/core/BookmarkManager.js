@@ -95,7 +95,8 @@ export default class BookmarkManager {
    */
  init() {
     this.provider = new Dropbox();
-    this.profilePath = null;
+    this.profileName = null;
+    this.profiles = null;
     this.lastSyncTime = 0;
     this.syncRate = 15; // Default to 15 minutes
     this.syncInterval = 0;
@@ -106,6 +107,12 @@ export default class BookmarkManager {
     clearInterval(this.syncInterval);
 
     this.resetSyncRate();
+  }
+
+  getCurrentProfile() {
+    return _.find(this.profiles, (profile) => {
+      return profile.name === this.profileName;
+    }) || null;
   }
 
   /**
@@ -192,11 +199,11 @@ export default class BookmarkManager {
   /**
    * Overwrites bookmarks on the server with local copy
    */
- push() {
+  push() {
     logger.log("Start push");
     if (!this.provider.isAuthed()) {
       return Promise.reject('Error during push, no available access token');
-    } else if (!this.profilePath) {
+    } else if (!this.getCurrentProfile() && !this.profileName) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
     }
 
@@ -204,7 +211,7 @@ export default class BookmarkManager {
       .then(() => {
         this.localData.lastModified = new Date().getTime();
       
-        return this.provider.fileUpload({ path: this.profilePath, contents: this.localData, compression: this.compression })
+        return this.provider.fileUpload({ fileName: this.profileName + '.syncmarx', id: (this.getCurrentProfile()) ? this.getCurrentProfile().id : null, contents: this.localData, compression: this.compression })
           .then(() =>  {
             this.lastSyncTime = this.localData.lastModified;
           })
@@ -222,11 +229,11 @@ export default class BookmarkManager {
  pull() {
     if (!this.provider.isAuthed()) {
       return Promise.reject('Error during pull, no available access token');
-    } else if (!this.profilePath) {
+    } else if (!this.getCurrentProfile()) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
     }
 
-    return this.getRemoteData(this.profilePath)
+    return this.getRemoteData()
       .then((results) => {
         return this.loadLocalData()
           .then(() =>  {
@@ -266,7 +273,7 @@ export default class BookmarkManager {
     
     if (!this.provider.isAuthed()) {
       return Promise.reject('Error during sync, no available access token');
-    } else if (!this.profilePath) {
+    } else if (!this.getCurrentProfile()) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
     }
 
@@ -371,13 +378,11 @@ export default class BookmarkManager {
  getRemoteData() {
     if (!this.provider.isAuthed()) {
       return Promise.reject('Error during pull, no available access token');
-    } else if (!this.profilePath) {
+    } else if (!this.getCurrentProfile()) {
       return Promise.reject('Error, a profile must be specified to enable syncing');
     }
-    // TODO: Phase out profilePath to use ID
-    var activeProfile = _.find(this.profiles, (profile) => '/' + profile.name === this.profilePath) || {};
 
-    return this.provider.fileDownload({path: this.profilePath, id: activeProfile.id })
+    return this.provider.fileDownload({ id: this.getCurrentProfile().id })
       .then((result) => {
         logger.log('File contents!', result);
 

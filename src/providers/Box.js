@@ -141,25 +141,32 @@ export default class Box extends StorageProvider {
         return _.map(filesFound, (file) => {
           return {
             id: file.id,
-            name: file.name,
-            path_lower: '/' + file.name.toLowerCase(), // TODO: Remove need for this and just use 'id' field
-            path_display: '/' + file.name
+            name: file.name.replace(/\.(.*?)$/g, '')
           };
         });
       });
   }
   fileUpload(data) {
-    // Encrypt and compress
-    var encryptedData = (data.compression) ? this.encryptData(data.contents) : JSON.stringify(data.contents, null, 2);
-    var file = new File([encryptedData], data.path.replace(/^\//g, ''));
-  
     return this.checkRefreshToken()
       .then(() => {
         return this.getOrCreateAppFolder()
       })
       .then((folder) => {
         // See if a file exists with this file name already
-        let existingFile = _.find(folder.item_collection.entries, (f) => '/' + f.name === data.path);
+        var existingFile = null;
+        
+        if (!data.id && !data.fileName) {
+          throw new Error('Error, profile id and file name were not specified');
+        } else {
+          // Find by id or name
+          existingFile = _.find(folder.item_collection.entries, (f) => f.id === data.id || f.name === data.fileName);
+        }
+
+        var fileName = (existingFile) ? existingFile.name : data.fileName;
+
+        // Encrypt and compress
+        var encryptedData = (data.compression) ? this.encryptData(data.contents) : JSON.stringify(data.contents, null, 2);
+        var file = new File([encryptedData], fileName);
 
         var formData = new FormData();
       
@@ -185,7 +192,7 @@ export default class Box extends StorageProvider {
 
         return this.filesList()
           .then((files) => {
-            let existingFile = _.find(files, (f) => '/' + f.name === data.path);
+            let existingFile = _.find(files, (f) => f.id === data.id);
               
             // Intitiate the download
             return axios({

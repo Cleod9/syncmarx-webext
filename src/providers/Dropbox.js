@@ -38,10 +38,8 @@ export default class Dropbox extends StorageProvider {
         // TODO: Make sure this still works (was returning the not formatted data before)
         return _.map(response.entries, (file) => {
           return {
-            id: file.id,
-            name: file.name,
-            path_lower: file.path_lower, // TODO: Remove need for this and just use 'id' field
-            path_display: file.path_display
+            id: file.path_lower,
+            name: file.name.replace(/\.(.*?)$/g, '')
           };
         });
       })
@@ -57,16 +55,16 @@ export default class Dropbox extends StorageProvider {
   fileUpload(data) {
     // Encrypt and compress
     var encryptedData = (data.compression) ? this.encryptData(data.contents) : JSON.stringify(data.contents, null, 2);
-  
-    var file = new File([encryptedData], data.path.replace(/^\//g, ''));
-  
-    return this.dbx.filesUpload({path: data.path, contents: file, mode: 'overwrite' })
+    var file = new File([encryptedData], data.fileName);
+
+    // Note: Dropbox uses file paths rather than ID to upload/update files. So file conflict check is not needed
+    return this.dbx.filesUpload({path: '/' + data.fileName, contents: file, mode: 'overwrite' })
       .then((response) => {
         logger.log('File uploaded!', response);
       });
   }
   fileDownload(data) {
-    return this.dbx.filesDownload({path: data.path })
+    return this.dbx.filesDownload({path: data.id })
       .then((response) => {
         logger.log('File downloaded!', response);
 

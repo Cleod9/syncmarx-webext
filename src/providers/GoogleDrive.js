@@ -115,7 +115,7 @@ export default class GoogleDrive extends StorageProvider {
           let fullFileList = response.data.files;
 
           // Extract folders from list
-          let appFolder = _.find(response.data.files, (file) => {
+          let appFolder = _.find(fullFileList, (file) => {
             return file.mimeType === 'application/vnd.google-apps.folder' && file.name === 'syncmarx';
           });
 
@@ -166,20 +166,13 @@ export default class GoogleDrive extends StorageProvider {
         return _.map(filesFound, (file) => {
           return {
             id: file.id,
-            name: file.name,
-            path_lower: '/' + file.name.toLowerCase(), // TODO: Remove need for this and just use 'id' field
-            path_display: '/' + file.name
+            name: file.name.replace(/\.(.*?)$/g, '')
           };
         });
       });
   }
   fileUpload(data) {
-    // Encrypt and compress
-    var encryptedData = (data.compression) ? this.encryptData(data.contents) : JSON.stringify(data.contents, null, 2);
-
-    var file = new Blob([encryptedData], {"type": "text/plain"});
-    var fileName = data.path.replace(/^\//g, '');
-
+    var file = null;
     let appFolder = null;
 
     return this.checkRefreshToken()
@@ -194,9 +187,20 @@ export default class GoogleDrive extends StorageProvider {
       })
       .then((files) => {
         // See if a file exists with this file name already
-        let existingFile = _.find(files, (f) => '/' + f.name === data.path);
+        var existingFile = null;
+        
+        if (!data.id && !data.fileName) {
+          throw new Error('Error, profile id and file name were not specified');
+        } else {
+          // Find by id or name
+          existingFile = _.find(files, (f) => f.id === data.id || f.name === data.fileName);
+        }
 
-        // Choose appropriate method and URL based on create VS update
+        // Encrypt and compress
+        var encryptedData = (data.compression) ? this.encryptData(data.contents) : JSON.stringify(data.contents, null, 2);
+        file = new Blob([encryptedData], {"type": "text/plain"});
+
+        // Choose appropriate method and URL based on create versus update
         let method = existingFile ? 'PATCH' : 'POST';
         let url = 'https://www.googleapis.com/upload/drive/v3/files';
 
@@ -205,7 +209,7 @@ export default class GoogleDrive extends StorageProvider {
         }
 
         let metadata = {
-          name: fileName,
+          name: (existingFile) ? existingFile.name : data.fileName,
           mimeType: 'text/plain'      
         };
 
@@ -257,7 +261,7 @@ export default class GoogleDrive extends StorageProvider {
       })
       .then((files) => {
         // See if a file exists with this file name already
-        let existingFile = _.find(files, (f) => '/' + f.name === data.path);
+        let existingFile = _.find(files, (f) => f.id === data.id);
         
         // Intitiate the download
         return axios({

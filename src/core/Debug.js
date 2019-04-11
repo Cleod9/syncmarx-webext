@@ -28,8 +28,8 @@ export var saveSettings = function (settings) {
     });
 };
 
-export var clearProfilePath = function () {
-  manager.profilePath = null;
+export var clearProfile= function () {
+  manager.profileName = null;
 };
 
 export var clearSettings = function () {

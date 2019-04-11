@@ -30,8 +30,8 @@ export var loadSettings = function () {
  */
 export var getSettings = function () {
   return {
-      migration: '03_dropdown_setting',
-      profilePath: manager.profilePath,
+      migration: '04_profile_path_removal',
+      profileName: manager.profileName,
       lastSyncTime: manager.lastSyncTime,
       syncRate: manager.syncRate,
       provider: manager.provider.getType(),
@@ -112,6 +112,13 @@ export var migrateSettings = function (settings) {
       settings.providerDropdown = 'dropbox';
 
       settings.migration = '03_dropdown_setting';
+    }
+    if (settings.migration === '03_dropdown_setting') {
+      // Move profilePath to "profile" field
+      settings.profileName = (settings.profilePath) ? settings.profilePath.replace(/^\//g, '').replace(/\.syncmarx$/g, '') : null;
+      delete settings.profilePath;
+
+      settings.migration = '04_profile_path_removal';
     }
 
     logger.info("Migrations completed");

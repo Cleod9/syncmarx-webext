@@ -150,7 +150,7 @@ browser.runtime.onMessage.addListener(function (data) {
       .then(function (profiles) {
         return manager.loadLocalData()
           .then(() => {
-            browser.runtime.sendMessage({ action: 'getProfilesComplete', profiles: profiles, selectedProfile: manager.profilePath, provider: manager.provider.getType(), syncRate: manager.syncRate, lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
+            browser.runtime.sendMessage({ action: 'getProfilesComplete', profiles: profiles, selectedProfile: manager.getCurrentProfile(), provider: manager.provider.getType(), syncRate: manager.syncRate, lastSyncTime: manager.lastSyncTime, totalBookmarks: BookmarkManager.bookmarkCountBuffer, totalFolders: BookmarkManager.folderCountBuffer });
             updateIcon('normal');
           });
       })
@@ -161,12 +161,12 @@ browser.runtime.onMessage.addListener(function (data) {
       });
   } else if (data.action === 'selectProfile') {
     updateIcon('syncing');
-    manager.profilePath = data.profilePath;
+    manager.profileName = data.name;
     manager.resetSyncRate();
 
     SaveData.saveSettings()
       .then(function () {
-        browser.runtime.sendMessage({ action: 'selectProfileComplete', selectedProfile: manager.profilePath, lastSyncTime: manager.lastSyncTime });
+        browser.runtime.sendMessage({ action: 'selectProfileComplete', selectedProfile: manager.getCurrentProfile(), lastSyncTime: manager.lastSyncTime });
       })
       .then(function () {
         updateIcon('normal');
@@ -182,7 +182,7 @@ browser.runtime.onMessage.addListener(function (data) {
       return;
     }
     updateIcon('syncing');
-    manager.profilePath = '/' + data.name + '.syncmarx';
+    manager.profileName = data.name;
     manager.resetSyncRate();
 
     manager.push()
@@ -191,7 +191,7 @@ browser.runtime.onMessage.addListener(function (data) {
           .then(function (profiles) {
             return SaveData.saveSettings()
               .then(function () {
-                browser.runtime.sendMessage({ action: 'createProfileComplete', profiles: profiles, selectedProfile: manager.profilePath });
+                browser.runtime.sendMessage({ action: 'createProfileComplete', profiles: profiles, selectedProfile: manager.getCurrentProfile() });
               });
           });
       })
@@ -262,7 +262,6 @@ manager.onAutoSyncHook = function () {
   SaveData.saveSettings();
 };
 
-
 // Always start the app showing the syncing symbol
 updateIcon('syncing');
 
@@ -270,8 +269,8 @@ SaveData.loadSettings()
   .then(function (settings) {
     logger.log('Loaded settings:', settings);
     // Store the remembered profile
-    if (settings.profilePath) {
-      manager.profilePath = settings.profilePath;
+    if (settings.profileName) {
+      manager.profileName = settings.profileName;
     }
 
     // Use the last sync time to remember when was last synced
@@ -307,7 +306,10 @@ SaveData.loadSettings()
   })
   .then(function () {
     if (manager.provider.isAuthed() && manager.syncRate !== 0) {
-      return manager.sync();
+      manager.getProfiles()
+        .then(function () {
+          return manager.sync();
+        });
     }
   })
   .then(function () {

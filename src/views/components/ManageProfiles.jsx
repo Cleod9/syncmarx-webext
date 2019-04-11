@@ -16,25 +16,25 @@ export default class ManageProfiles extends React.Component {
 
   selectProfile(evt) {
     var selectedIndex = this.refs.profilesOptions.selectedIndex;
-    var profilePath = this.refs.profilesOptions.options[selectedIndex].value;
+    var profileName = this.refs.profilesOptions.options[selectedIndex].value;
 
     // Co-erce to display name
     _.each(this.props.params.profiles, (profile) => {
-      if (profile.path_lower === profilePath.toLowerCase()) {
-        profilePath = profile.path_display;
+      if (profile.name === profileName) {
+        profileName = profile.name;
       }
     });
   
-    logger.log("Profile changed", profilePath);
+    logger.log("Profile changed", profileName);
     if (this.props.onSelectProfile) {
-      this.props.onSelectProfile({ profilePath: profilePath });
+      this.props.onSelectProfile({ name: profileName });
     }
   }
   createProfile(evt) {
     logger.log("Create profile clicked");
 
     if (this.props.onCreateProfile) {
-      this.props.onCreateProfile({ name:  this.refs.createProfileText.value });
+      this.props.onCreateProfile({ name: this.refs.createProfileText.value });
     }
   
     this.refs.createProfileText.value = '';
@@ -91,12 +91,12 @@ export default class ManageProfiles extends React.Component {
             return (
               <div>
                 <div className="mb-3">
-                  <select ref="profilesOptions" onChange={(evt) => { this.selectProfile(evt); }} value={this.props.params.selectedProfile ? this.props.params.selectedProfile.toLowerCase() : null}>
+                  <select ref="profilesOptions" onChange={(evt) => { this.selectProfile(evt); }} value={this.props.params.selectedProfile ? this.props.params.selectedProfile.name : ''}>
                     <option key="k0" value="">[Unselected]</option>
                     {_.map(this.props.params.profiles, (profile, index) => {
                       logger.info('Found profile:', profile);
-                      let value = profile.path_lower;
-                      let text = profile.path_display.replace(/\.syncmarx/g, '').replace(/\//g, '');
+                      let value = profile.name;
+                      let text = profile.name;
         
                       return (
                         <option key={index} value={value}>{text}</option>

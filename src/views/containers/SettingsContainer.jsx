@@ -156,7 +156,7 @@ export default class SettingsContainer extends React.Component {
     this.showPage(Initialization);
   }
   onSelectProfile(params) {
-    browser.runtime.sendMessage({ action: 'selectProfile', profilePath: params.profilePath });
+    browser.runtime.sendMessage({ action: 'selectProfile', name: params.name });
   }
   onChangeSyncRate(params) {
     browser.runtime.sendMessage({ action: 'changeSyncRate', syncRate: params.syncRate });
