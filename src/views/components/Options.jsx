@@ -55,6 +55,8 @@ export default class Options extends React.Component {
       return 'Dropbox'
     } else if (this.props.params.provider === 'googledrive') {
       return 'Google Drive';
+    } else if (this.props.params.provider === 'box') {
+      return 'Box';
     } else {
       return 'Provider';
     }

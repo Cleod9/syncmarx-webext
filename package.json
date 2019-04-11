@@ -8,7 +8,6 @@
   },
   "scripts": {
     "dev": "set NODE_ENV=dev && webpack --watch",
-    "lock": "package-lock",
     "prod": "set NODE_ENV=prod && webpack",
     "test": "cd app && web-ext run"
   },
@@ -36,7 +35,6 @@
     "moment": "2.22.1",
     "node-sass": "4.9.4",
     "normalize.css": "8.0.0",
-    "package-lock": "1.0.0",
     "postcss": "6.0.21",
     "postcss-loader": "2.1.4",
     "query-string": "6.0.0",

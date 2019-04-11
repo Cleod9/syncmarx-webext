@@ -61,7 +61,7 @@ export default class Box extends StorageProvider {
     return this.client.folders.get({ id: '0' })
       .catch((error) => {
         // Assume that the token expired
-        if (error.response && error.response.status === 400) {
+        if (error.response && error.response.status === 401) {
           logger.log('Access token expired. Attempting to fetch new token...');
           
           // Token invalid, get new refresh token
