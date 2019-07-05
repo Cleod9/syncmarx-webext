@@ -1,5 +1,6 @@
 require('isomorphic-fetch');
 require('es6-promise').polyfill();
+require('es6-symbol/implement');
 require('normalize.css');
 require('bootstrap/dist/css/bootstrap.css');
 require('./global.scss');

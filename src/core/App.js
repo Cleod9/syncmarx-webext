@@ -1,5 +1,6 @@
 import 'isomorphic-fetch';
 require('es6-promise').polyfill();
+require('es6-symbol/implement');
 window.browser = require('webextension-polyfill');
 import BookmarkManager from 'core/BookmarkManager';
 import Logger from 'util/Logger';

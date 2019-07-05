@@ -32,6 +32,54 @@ var ROOT_MAP = {
   }
 };
 
+/**
+ * Returns the type of the BookmarkTreeNode (either "bookmark" or "folder". May also be "separator" but only in Firefox)
+ * @param {BookmarkTreeNode} node The node to check
+ */
+var getNodeType = function (node) {
+  if (typeof node.type === 'undefined') {
+    // Browsers that don't have the "type" field must check for existence of url instead
+    return (typeof node.url === 'undefined') ? 'folder' : 'bookmark';
+  } else {
+    // Explicitly return the node type
+    return node.type;
+  }
+};
+
+/**
+ * Returns the id of the menu bookmarks folder depending on browser type
+ */
+var getMenuFolderId = function () {
+  if (BROWSER_NAME === 'firefox') {
+    return "menu________";
+  } else if (BROWSER_NAME === 'chrome') {
+    return "2";
+  } else if (BROWSER_NAME === 'vivaldi') {
+    return "1";
+  } else {
+    // Default to typical chromium behvavior
+    return "2";
+  }
+};
+
+/**
+ * Returns the id of the bookmarks toolbar folder depending on browser type
+ */
+var getBookmarksBarId = function () {
+  if (BROWSER_NAME === 'firefox') {
+    return "toolbar_____";
+  } else if (BROWSER_NAME === 'chrome') {
+    return "1";
+  } else if (BROWSER_NAME === 'vivaldi') {
+    // Note: Vivaldi doesn't have a dedicated "Bookmarks Bar" folder. User should assign the name "Bookmarks bar" to identify instead
+    return null;
+  }  else {
+    // Default to typical chromium behvavior
+    return "1";
+  }
+};
+
+
 // https://stackoverflow.com/questions/41607804/promise-each-without-bluebird
 var Promise_each = function(arr, fn) { // take an array and a function
   // invalid input
@@ -56,7 +104,7 @@ var incomingUrlFixer = function (bookmark, originalNode) {
     bookmark.url = bookmark.url.replace(/^chrome:\/\//, 'http://chrome//');
 
     return browser.bookmarks.create(bookmark);
-  } else if (BROWSER_NAME === 'firefox' && originalNode.type === 'separator') {
+  } else if (BROWSER_NAME === 'firefox' && getNodeType(originalNode) === 'separator') {
     // Hack for Firefox ('separator' is technically not a standard, valid type)
     logger.log("Fixing incoming separator for Firefox: " , bookmark);
 
@@ -238,15 +286,15 @@ export default class BookmarkManager {
         return this.loadLocalData()
           .then(() =>  {
             // Get local data
-            var localMenuData = BookmarkManager.findNodeByTitle(MENU_TITLES, this.localData.data, 1);
-            var localToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, this.localData.data, 1);
+            var localMenuData = BookmarkManager.findNodeByTitleOrId(MENU_TITLES, getMenuFolderId(), this.localData.data, 1);
+            var localToolbarData = BookmarkManager.findNodeByTitleOrId(TOOLBAR_TITLES, getBookmarksBarId(), this.localData.data, 1);
 
             // Recursively delete children (Disregard toolbar when null, not all browsers follow same structure)
-            return Promise_each((localToolbarData) ? localToolbarData.children : [], (child) => {
+            return Promise_each((localToolbarData && typeof localToolbarData.children !== 'undefined') ? localToolbarData.children : [], (child) => {
               return BookmarkManager.applyDeltaDeleteHelper(child);
             })
               .then(() => {
-                return Promise_each(localMenuData.children, (child) => {
+                return Promise_each((localMenuData && typeof localMenuData.children !== 'undefined') ? localMenuData.children : [], (child) => {
                   return BookmarkManager.applyDeltaDeleteHelper(child);
                 })
                   .then(() => {
@@ -280,17 +328,17 @@ export default class BookmarkManager {
     return this.loadLocalData()
       .then(() => {
         // Get local data
-        var localMenuData = BookmarkManager.findNodeByTitle(MENU_TITLES, this.localData.data, 1);
-        var localToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, this.localData.data, 1);
+        var localMenuData = BookmarkManager.findNodeByTitleOrId(MENU_TITLES, getMenuFolderId(), this.localData.data, 1);
+        var localToolbarData = BookmarkManager.findNodeByTitleOrId(TOOLBAR_TITLES, getBookmarksBarId(), this.localData.data, 1);
 
         return this.getRemoteData()
           .then((remoteData) => {
-            var remoteMenuData = BookmarkManager.findNodeByTitle(MENU_TITLES, remoteData.data, 1);
-            var remoteToolbarData = (localToolbarData) ? BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, remoteData.data, 1) : [];
+            var remoteMenuData = BookmarkManager.findNodeByTitleOrId(MENU_TITLES, getMenuFolderId(), remoteData.data, 1);
+            var remoteToolbarData = (localToolbarData) ? BookmarkManager.findNodeByTitleOrId(TOOLBAR_TITLES, getBookmarksBarId(), remoteData.data, 1) : [];
 
             if (!remoteToolbarData) {
               // We may need to dig a little deeper in depth (Hack for vivaldi compatibility, since it doesn ot have dedicated bookmarks bar)
-              remoteToolbarData = BookmarkManager.findNodeByTitle(TOOLBAR_TITLES, remoteData.data, 2);
+              remoteToolbarData = BookmarkManager.findNodeByTitleOrId(TOOLBAR_TITLES, getBookmarksBarId(), remoteData.data, 2);
             }
 
             // Check for deltas between local and remote
@@ -439,7 +487,7 @@ BookmarkManager.treeNodesToJSON = function (node) {
 
   outgoingUrlFix(data);
 
-  if (node.children) {
+  if (typeof node.children !== 'undefined') {
     // This is a folder so we need to find all children
     for (var i = 0; i < node.children.length; i++) {
       // Add the created child to the children list
@@ -471,6 +519,43 @@ BookmarkManager.findNodeByTitle = function (title, node, depthLimit) {
     return result;
   } else {
     return null;
+  }
+};
+
+/**
+ * Searches for a bookmark within bookmark tree by id
+ * @param {string} id 
+ * @param {BookmarkTreeNode} node 
+ */
+BookmarkManager.findNodeById = function (id, node, depthLimit) {
+  depthLimit = (typeof depthLimit === 'undefined') ? -1 : depthLimit;
+
+  if (node.id && node.id.match(id)) {
+    return node; 
+  } else if ((depthLimit > 0 || depthLimit === -1) && typeof node.children !== 'undefined') {
+    var result = null;
+    for (var i = 0; i < node.children.length && !result; i++) {
+      result = BookmarkManager.findNodeById(id, node.children[i], depthLimit !== -1 ? depthLimit - 1 : -1);
+    }
+    return result;
+  } else {
+    return null;
+  }
+};
+
+/**
+ * Searches for a bookmark by title or id
+ * @param {string} title
+ * @param {string} id
+ * @param {BookmarkTreeNode} node 
+ */
+BookmarkManager.findNodeByTitleOrId = function (title, id, node, depthLimit) {
+  var result = BookmarkManager.findNodeByTitle(title, node, depthLimit);
+
+  if (!result) {
+    return BookmarkManager.findNodeById(id, node, depthLimit);
+  } else {
+    return result;
   }
 };
 
@@ -622,7 +707,7 @@ BookmarkManager.applyDeltaCreateHelper = function (node, parentNode) {
     })
     .then((createdNode) => {
       // Recursively create children 
-      return Promise_each(node.children, (child) => {
+      return Promise_each(typeof node.children !== 'undefined' ? node.children : [], (child) => {
         return BookmarkManager.applyDeltaCreateHelper(child, createdNode);
       });
     });
@@ -650,18 +735,18 @@ BookmarkManager.applyDelta = function (delta) {
       })
       .then((node) => {
         // Recursively create children
-        return Promise_each(delta.node.children, (child) => {
+        return Promise_each(typeof delta.node.children !== 'undefined' ? delta.node.children : [], (child) => {
           return BookmarkManager.applyDeltaCreateHelper(child, node);
         });
       });
   } else if (delta.type === 'delete') {
     // Recursively delete children
-    return Promise_each(delta.node.children, (child) => {
+    return Promise_each(typeof delta.node.children !== 'undefined' ? delta.node.children : [], (child) => {
       return BookmarkManager.applyDeltaDeleteHelper(child);
     })
       .then(() => {
         // Now we can delete self
-        if (delta.node.type === 'folder') {
+        if (getNodeType(delta.node) === 'folder') {
           // More Efficient removal for folders
           return browser.bookmarks.removeTree(delta.node.id);
         } else {
@@ -680,12 +765,12 @@ BookmarkManager.applyDelta = function (delta) {
  */
 BookmarkManager.applyDeltaDeleteHelper = function (node) {
   // Recursively delete children 
-  return Promise_each(node.children, (child) => {
+  return Promise_each(typeof node.children !== 'undefined' ? node.children : [], (child) => {
     return BookmarkManager.applyDeltaDeleteHelper(child);
   })
     .then(() => {
       // Now safe to delete self
-      if (node.type === 'folder') {
+      if (getNodeType(node) === 'folder') {
         // More Efficient removal for folders
         return browser.bookmarks.removeTree(node.id);
       } else {
