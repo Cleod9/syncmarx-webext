@@ -8,6 +8,8 @@ A web extension to synchronize bookmarks between browers. Supports the following
 * Syncs as a single backup file to Dropbox, Google Drive, or Box
 * Configurable automatic sync
 
+Note that this extension talks to a companion backend app required for initial handshake to third-party APIs called [syncmarx-api](https://github.com/Cleod9/syncmarx-api)
+
 ## How to Build
 
 First make sure you have the latest version of [Node.js](https://nodejs.org/en/) installed. Then follow the instructions below from within the project directory.
