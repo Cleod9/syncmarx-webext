@@ -6,6 +6,9 @@ var Dropbox = require('dropbox').Dropbox;
 
 var logger = new Logger('[Authentication.jsx]');
 
+/**
+ * The "Setup" screen
+ */
 export default class Authentication extends React.Component {
   constructor() {
     super();

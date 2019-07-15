@@ -7,6 +7,8 @@ import Logger from 'util/Logger';
 var logger = new Logger('[Debug.js]');
 var manager = null;
 
+// Note: This class is used to assist with debugging in dev enviroments. Can add additional methods as needed here.
+
 export var init = function (managerInstance) {
   manager = managerInstance;
   window.manager = manager;

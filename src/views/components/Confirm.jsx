@@ -3,6 +3,9 @@ import Logger from 'util/Logger';
 
 var logger = new Logger('[Confirm.jsx]');
 
+/**
+ * Simple confirmation dialog
+ */
 export default class Confirm extends React.Component {
   constructor() {
     super();

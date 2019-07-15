@@ -3,6 +3,9 @@ import Logger from 'util/Logger';
 
 var logger = new Logger('[Error.jsx]');
 
+/**
+ * Simple error message display
+ */
 export default class Error extends React.Component {
   constructor() {
     super();

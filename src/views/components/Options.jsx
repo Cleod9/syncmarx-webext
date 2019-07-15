@@ -4,6 +4,9 @@ import Confirm from 'views/components/Confirm';
 
 var logger = new Logger('[Options.jsx]');
 
+/**
+ * The "Options" screen
+ */
 export default class Options extends React.Component {
   constructor() {
     super();

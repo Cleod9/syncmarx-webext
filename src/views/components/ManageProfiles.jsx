@@ -5,6 +5,9 @@ import Confirm from 'views/components/Confirm';
 
 var logger = new Logger('[ManageProfiles.jsx]');
 
+/**
+ * The "Profiles" screen
+ */
 export default class ManageProfiles extends React.Component {
   constructor() {
     super();

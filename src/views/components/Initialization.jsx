@@ -5,6 +5,9 @@ import './Initialization.scss';
 
 var logger = new Logger('[Initialization.jsx]');
 
+/**
+ * Loading/Initialization screen
+ */
 export default class Initialization extends React.Component {
   constructor() {
     super();

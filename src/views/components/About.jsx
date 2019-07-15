@@ -3,6 +3,9 @@ import Logger from 'util/Logger';
 
 var logger = new Logger('[About.jsx]');
 
+/**
+ * The "About" screen
+ */
 export default class About extends React.Component {
   constructor() {
     super();

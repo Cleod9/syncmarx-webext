@@ -4,25 +4,46 @@
 
 A web extension to synchronize bookmarks between browers. Supports the following features:
 
-* Works in Google Chrome and Firefox
-* Syncs as a compressed file to Dropbox
+* Works in Firefox, Google Chrome, Vivaldi, and Brave desktop browsers
+* Syncs as a single backup file to Dropbox, Google Drive, or Box
 * Configurable automatic sync
 
-## How to Run
+## How to Build
 
+First make sure you have the latest version of [Node.js](https://nodejs.org/en/) installed. Then follow the instructions below from within the project directory.
+
+### Development
 ```bash
 npm install
 npm run dev
+
+# Or to auto-rebuild on file changes:
+npm run dev-watch
 ```
 
-Can use `web-ext run` if you want to load it into a temporary instance of Firefox for testing.
+### Production
+```bash
+npm install
+npm run prod
 
-## How to Set Up
+# Or to auto-rebuild on file changes:
+npm run prod-watch
+```
 
-Follow the on-screen instructions. The app will walk you through the authentication process for a third-party cloud file host (currently Dropbox). Copy and paste the token into the app, and you can start syncing bookmarks.
+## How to Test
 
-## TO-DO:
+You have two options for testing. The first is to simply build the app, and load the directory as an unpacked extension directly from within your browser.
 
-* Prep for Chrome Store
-* Google Drive??
-* Android App??
+The other way is to run `npm run dev-web-ext` (or `prod-web-ext` depending on target environment). This will load the extension into a temporary instance of Firefox for testing.
+
+## How to Configure Syncmarx
+
+Follow the on-screen instructions. The app will walk you through the authentication process for a third-party cloud file host (currently Dropbox, Google Drive, or Box). Copy and paste the provided token into the app, and you can start syncing bookmarks.
+
+## Known Issues:
+
+* Currently may not be able to reconcile/sort duplicates within the same folder
+* Will not manage browser-specific bookmark functionality due to Web Extension spec limitations (e.g. Seperators, tags, keywords, description, favicons, etc.)
+* Will not track Firefox's "Other Bookmarks" folder (a.k.a. "Unorganized" bookmarks)
+* Still overall alpha in general so it is recommended to create a backup of your bookmarks before using
+* Microsft Edge support will not be possible until this issue is resolved

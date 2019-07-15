@@ -5,6 +5,9 @@ import * as moment from 'moment';
 
 var logger = new Logger('[Home.jsx]');
 
+/**
+ * The "Home" screen
+ */
 export default class Home extends React.Component {
   constructor() {
     super();

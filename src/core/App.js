@@ -49,11 +49,17 @@ browser.browserAction.setPopup({
   popup: 'settings.htm'   
 });
 
-// Add message listener
+/**
+ * Listens for incoming messages from the extension UI.
+ * 
+ * TODO: Break out conditionals to separate functions to make the data params clearer
+ */
 browser.runtime.onMessage.addListener(function (data) {
   if (data.action === 'init') {
+    // Initialize the extension
     browser.runtime.sendMessage({ action: 'initComplete', authorized: manager.provider.isAuthed(), compression: manager.compression, providerDropdown: manager.providerDropdown });
   } else if (data.action === 'auth') {
+    // Authorize to third party provider using provided credentials
     updateIcon('syncing');
     manager.auth(data.provider, data.credentials)
       .then(function () {
@@ -72,6 +78,7 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'authError', message: formatRejection(e, 'Invalid access token') });
       });
   } else if (data.action === 'deauth') {
+    // Authorize to third party provider using provided credentials
     updateIcon('syncing');
     manager.revokeAuth()
       .catch(function (e) {
@@ -94,6 +101,7 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'deauthError', message: formatRejection(e, 'An unknown error occured') });
       });
   } else if (data.action === 'push') {
+    // Force push bookmarks to the remote service
     updateIcon('syncing');
     manager.push()
       .then(function () {
@@ -111,6 +119,7 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'pushError', message: formatRejection(e, 'Failed to push bookmark data') });
       });
   } else if (data.action === 'pull') {
+    // Force pull bookmarks from the remote service
     updateIcon('syncing');
     manager.pull()
       .then(function () {
@@ -128,6 +137,7 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'pullError', message: formatRejection(e, 'Failed to pull bookmark data') });
       });
   } else if (data.action === 'sync') {
+    // Manually run a sync
     updateIcon('syncing');
     manager.sync()
       .then(function () {
@@ -145,6 +155,7 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'syncError', message: formatRejection(e, 'Failed to sync bookmark data') });
       });
   } else if (data.action === 'getProfiles') {
+    // Returns the list of profiles stored in the remote service
     manager.resetSyncRate();
 
     manager.getProfiles()
@@ -161,6 +172,7 @@ browser.runtime.onMessage.addListener(function (data) {
         updateIcon('disabled');
       });
   } else if (data.action === 'selectProfile') {
+    // Select a profile from te remote service
     updateIcon('syncing');
     manager.profileName = data.name;
     manager.resetSyncRate();
@@ -178,7 +190,9 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'selectProfileError', message: formatRejection(e, 'An error occured while selecting profile') });
       });
   } else if (data.action === 'createProfile') {
+    // Create a new profile on the remote service
     if (!data.name.match(/^[\w\-. ]+$/g)) {
+      // Limit the characters to play it safe (since most file services require valid file names, and we use this as the file name)
       browser.runtime.sendMessage({ action: 'createProfileError', message: 'Invalid profile name: ' + data.name });
       return;
     }
@@ -205,6 +219,7 @@ browser.runtime.onMessage.addListener(function (data) {
         browser.runtime.sendMessage({ action: 'createProfileError', message: formatRejection(e, 'An error occured while creating profile') });
       });
     } else if (data.action === 'changeSyncRate') {
+      // Update the sync rate setting
       manager.changeSyncRate(data.syncRate);
 
       SaveData.saveSettings()
@@ -217,6 +232,7 @@ browser.runtime.onMessage.addListener(function (data) {
           browser.runtime.sendMessage({ action: 'changeSyncRateError', message: formatRejection(e, 'An error occured while updating sync interval') });
         });
     } else if (data.action === 'changeCompression') {
+      // Update the compression setting
       manager.compression = data.compression;
 
       SaveData.saveSettings()
@@ -229,6 +245,7 @@ browser.runtime.onMessage.addListener(function (data) {
           browser.runtime.sendMessage({ action: 'changeCompressionError', message: formatRejection(e, 'An error occured while changing compression setting') });
         });
     } else if (data.action === 'changeProviderDropdown') {
+      // Persist the last chosen provider in saved config
       manager.providerDropdown = data.providerDropdown;
 
       SaveData.saveSettings()

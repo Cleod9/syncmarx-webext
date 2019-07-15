@@ -1,3 +1,7 @@
+/**
+ * Very thin console logging wrapper
+ * @param {string} prefix String to prefix to all log messages from this instance
+ */
 function Logger(prefix) {
   this.prefix = prefix ? prefix + ' ' : '';
 }

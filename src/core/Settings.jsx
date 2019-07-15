@@ -12,4 +12,5 @@ import SettingsContainer from 'views/containers/SettingsContainer';
 
 window.browser = require('webextension-polyfill');
 
+// Render the UI for the extension
 ReactDOM.render(<SettingsContainer />, document.getElementById('main'));

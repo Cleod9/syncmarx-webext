@@ -13,6 +13,9 @@ import './SettingsContainer.scss';
 var logger = new Logger('[SettingsContainer.jsx]');
 var version = require('../../../version.json');
 
+/**
+ * The root view for the extension UI
+ */
 export default class SettingsContainer extends React.Component {
   constructor() {
     super();

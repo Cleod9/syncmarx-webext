@@ -6,6 +6,7 @@ var Cryptr = require('cryptr');
 var logger = new Logger('[StorageProvider.js]');
 
 // Secret string
+// TODO: This pattern could be used to password-protect files as a new feature. For now it is just be using to compress and obfuscate the data.
 var secretKey = 'GYYw7AHADAJsUFoBMFgEMEBYCMmCcCARgGwCsxCo2AzLDKdnmIUAAA==';
 
 var cryptr = new Cryptr(LZString.decompressFromBase64(secretKey));
