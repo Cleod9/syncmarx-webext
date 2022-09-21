@@ -29,14 +29,17 @@ export default class Dropbox extends StorageProvider {
     this.dbauth.setRefreshToken(credentials ? credentials.refreshToken : null);
     this.db = new DropboxCls.Dropbox({ accessToken: this.dbauth.getAccessToken() });
 
-    return this.checkRefreshToken()
-      .catch((err) => {
-        // Special error handling can go here
+    return Promise.resolve()
+      .then(() => {
         if (credentials && !credentials.refreshToken) {
           throw new StorageProviderError('Invalid refresh token, please try reconnecting to Dropbox');
         } else {
-          throw err;
+          return this.checkRefreshToken();
         }
+      })
+      .catch((err) => {
+        // Special error handling can go here
+        throw err;
       });
   }
   deauthorize() {
