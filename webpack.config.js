@@ -82,7 +82,7 @@ module.exports = {
   },
 
   // Source maps support (or 'inline-source-map' also works)
-  devtool: (mode === 'production') ? 'none' : 'inline-source-map',
+  devtool: (mode === 'production') ? undefined : 'inline-source-map',
 
   // Add loader for .ts files.
   module: {
