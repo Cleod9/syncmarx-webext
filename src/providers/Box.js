@@ -31,7 +31,8 @@ export default class Box extends StorageProvider {
     this.refreshToken = credentials.refreshToken;
     this.client = new this.box.BasicBoxClient({accessToken: this.accessToken });
 
-    return this.client.folders.get({ id: '0' })
+
+    return this.checkRefreshToken()
       .catch((err) => {
         // Special error handling can go here
         throw err;

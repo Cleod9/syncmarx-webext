@@ -27,7 +27,11 @@ export default class GoogleDrive extends StorageProvider {
     this.accessToken = credentials.accessToken;
     this.refreshToken = credentials.refreshToken;
 
-    return Promise.resolve();
+    return this.checkRefreshToken()
+      .catch((err) => {
+        // Special error handling can go here
+        throw err;
+      });
   }
   deauthorize() {
     return this.checkRefreshToken()
@@ -107,7 +111,11 @@ export default class GoogleDrive extends StorageProvider {
         return axios({
           method: 'get',
           url: 'https://www.googleapis.com/drive/v3/files',
-          headers: { 'Authorization': 'Bearer ' + this.accessToken }
+          headers: { 'Authorization': 'Bearer ' + this.accessToken },
+          params: {
+            includeItemsFromAllDrives: true,
+            supportsAllDrives: true
+          }
         })
         .then((response) => {
           logger.log(response.data.files);

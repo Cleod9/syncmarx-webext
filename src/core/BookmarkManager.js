@@ -1,4 +1,3 @@
-require('isomorphic-fetch');
 require('es6-promise').polyfill();
 var _ = require('lodash');
 var LZString = require('lz-string');
@@ -184,7 +183,7 @@ export default class BookmarkManager {
   }
 
   /**
-   * Sets acces token for authoriation and performs a test operation via getProfiles()
+   * Sets access token for authorization and performs a test operation via getProfiles()
    */
  auth(provider, credentials) {
     logger.log("Start auth");

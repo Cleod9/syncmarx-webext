@@ -1,4 +1,3 @@
-import 'isomorphic-fetch';
 require('es6-promise').polyfill();
 require('es6-symbol/implement');
 window.browser = require('webextension-polyfill');
@@ -6,6 +5,7 @@ import BookmarkManager from 'core/BookmarkManager';
 import Logger from 'util/Logger';
 import * as Debug from 'core/Debug';
 import * as SaveData from 'util/SaveData';
+import { StorageProviderError } from 'providers/StorageProvider';
 
 var logger = new Logger('[App.js]');
 var manager = new BookmarkManager();
@@ -75,7 +75,12 @@ browser.runtime.onMessage.addListener(function (data) {
       .catch(function (e) {
         logger.error(e);
         updateIcon('disabled');
-        browser.runtime.sendMessage({ action: 'authError', message: formatRejection(e, 'Invalid access token') });
+
+        if (e instanceof StorageProviderError) {
+          browser.runtime.sendMessage({ action: 'authError', message: formatRejection(e, e.message) });
+        } else {
+          browser.runtime.sendMessage({ action: 'authError', message: formatRejection(e, 'Invalid access token') });
+        }
       });
   } else if (data.action === 'deauth') {
     // Authorize to third party provider using provided credentials
@@ -307,7 +312,7 @@ SaveData.loadSettings()
     // Update the provider dropdown setting
     manager.providerDropdown = settings.providerDropdown;
 
-    // Test login to Dropbox
+    // Test login to storage provider
     if (settings.credentials) {
       return manager.auth(settings.provider, settings.credentials)
         .then(function () {

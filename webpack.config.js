@@ -1,52 +1,66 @@
 var path = require('path');
 var webpack = require('webpack');
 var autoprefixer = require('autoprefixer');
-var CopyWebpackPlugin = require('copy-webpack-plugin');
-var CleanWebpackPlugin = require('clean-webpack-plugin');
+var CopyPlugin = require('copy-webpack-plugin');
+var CleanWebpackPlugin = require('clean-webpack-plugin').CleanWebpackPlugin;
+var NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+
 var mode = process.env.NODE_ENV.match(/prod/) ? 'production' : 'development';
 
 var rules = [
-    {
-      test: /\.jsx?$/,
-      include: path.join(__dirname, 'src'),
-      use: {
-        loader: 'babel-loader',
+  {
+    test: /\.jsx?$/,
+    include: path.join(__dirname, 'src'),
+    use: {
+      loader: 'babel-loader',
         options: {
+          cacheDirectory: true,
+          babelrc: false,
           presets: [
-            ['es2015', { "modules": false } ], 'react'
+            [
+              '@babel/preset-env',
+              { targets: { browsers: 'last 2 versions' } }
+            ],
+            '@babel/preset-react'
           ]
         }
-      }
-    },
-    {
-      test: /\.s?css$/,
-      use: [{
-          loader: "style-loader"
-        }, {
-          loader: "css-loader",
-          options: { url: false }
-        }, {
-          loader: "postcss-loader"
-        }, {
-          loader: "sass-loader"
-        }
-      ]
     }
+  },
+  {
+    test: /\.s?css$/,
+    use: [{
+        loader: "style-loader"
+      }, {
+        loader: "css-loader",
+        options: { url: false }
+      }, {
+        loader: "postcss-loader"
+      }, {
+        loader: "sass-loader"
+      }
+    ]
+  }
 ];
 var plugins = [];
 
-plugins.push(new CleanWebpackPlugin(['app/**/*.*']));
-plugins.push(new CopyWebpackPlugin([{ from: 'static', to: '.' }]));
+plugins.push(new CleanWebpackPlugin({
+  plugins: ['app/**/*.*']
+}));
+plugins.push(new CopyPlugin({
+  patterns: [{ from: 'static', to: '.' }]
+}));
 plugins.push(
-  new webpack.LoaderOptionsPlugin({
-    options: {
-      postcss: [ autoprefixer({ browsers: ['last 40 versions'] }) ]
-    }
-  })
+  autoprefixer
 );
 plugins.push(
   new webpack.DefinePlugin({
     PRODUCTION: mode === 'production'
+  })
+);
+plugins.push(
+  new NodePolyfillPlugin({
+    // Note: Newer versions of the Dropbox SDK and cryptr libraries have a hard dependency on native Node.js libs
+    includeAliases: ['crypto','stream', 'Buffer']
   })
 );
 
@@ -77,6 +91,6 @@ module.exports = {
 
   plugins: plugins,
   optimization: {
-    minimize: (mode === 'production')
+    minimize: false
   }
 };

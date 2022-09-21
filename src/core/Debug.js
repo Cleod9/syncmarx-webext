@@ -1,4 +1,3 @@
-import 'isomorphic-fetch';
 require('es6-promise').polyfill();
 window.browser = require('webextension-polyfill');
 import * as SaveData from 'util/SaveData';

@@ -11,6 +11,16 @@ var secretKey = 'GYYw7AHADAJsUFoBMFgEMEBYCMmCcCARgGwCsxCo2AzLDKdnmIUAAA==';
 
 var cryptr = new Cryptr(LZString.decompressFromBase64(secretKey));
 
+/**
+ * To help capture user-friendly error messaging
+ */
+export class StorageProviderError extends Error {
+  constructor(message) {
+    super(message);
+  }
+}
+
+
 export default class StorageProvider {
 
   constructor() {

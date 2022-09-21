@@ -1,7 +1,6 @@
 import React from 'react';
 import Logger from 'util/Logger';
-
-var Dropbox = require('dropbox').Dropbox;
+import * as DropboxCls from 'dropbox';
 
 
 var logger = new Logger('[Authentication.jsx]');
@@ -23,7 +22,10 @@ export default class Authentication extends React.Component {
       let value = this.refs.provider.value;
 
       if (value === 'dropbox') {
-        this.props.onAuth({ provider: 'dropbox', credentials: { accessToken: this.refs.codeText.value } });
+        let tokenList = this.refs.codeText.value.split(':');
+        let accessToken = tokenList[0];
+        let refreshToken = tokenList[1];
+        this.props.onAuth({ provider: 'dropbox', credentials: { accessToken: accessToken, refreshToken: refreshToken } });
       } else if (value === 'googledrive') {
         let tokenList = this.refs.codeText.value.split(':');
         let accessToken = tokenList[0];
@@ -48,10 +50,15 @@ export default class Authentication extends React.Component {
     let value = this.refs.provider.value;
 
     if (value === 'dropbox') {
-      let dbx = new Dropbox({ clientId: '1ea74e9vcsu22oz' });
+      let dbx = new DropboxCls.DropboxAuth({ clientId: '1ea74e9vcsu22oz' });
       let redirect_uri = PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/dropbox' : 'http://localhost:1800/auth/dropbox';
-      let authUrl = dbx.getAuthenticationUrl(redirect_uri, null, 'code');
-      window.open(authUrl);
+      dbx.getAuthenticationUrl(redirect_uri, null, 'code', 'offline', null, 'none', false)
+        .then((authUrl) => {
+          window.open(authUrl);
+        })
+        .catch((e) => {
+          logger.error(e);
+        });
     } else if (value === 'googledrive') {
       let scope = 'https://www.googleapis.com/auth/drive.file';
       let client_id = '230145339685-4smjsndovcf1l9ohdh59bl52pgvgmnga';
@@ -84,7 +91,7 @@ export default class Authentication extends React.Component {
           <input className="form-control" ref="codeText" type="text" placeholder="Paste Token Here"/> 
           <button id="auth" type="button" className="btn btn-primary btn-sm input-group-addon" onClick={(evt) => { this.auth(evt); }}>Authorize</button>
         </div>
-        <div className="alert alert-warning" role="alert">
+        <div className="alert alert-warning small" role="alert">
           <p><strong>Warning:<br/>This extension is in alpha!</strong></p>
           <p>Please make a manual backup your bookmarks before use to avoid the risk of losing bookmarks!</p>
         </div>
