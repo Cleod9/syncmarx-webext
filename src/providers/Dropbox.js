@@ -58,7 +58,7 @@ export default class Dropbox extends StorageProvider {
         // Token invalid, get new refresh token
         return axios({
           method: 'post',
-          url: PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/dropbox/refreshtoken' : 'http://localhost:1800/auth/dropbox/refreshtoken',
+          url: PRODUCTION ? 'https://syncmarx.com/auth/dropbox/refreshtoken' : 'http://localhost:1800/auth/dropbox/refreshtoken',
           params: {
             refresh_token: this.dbauth.getRefreshToken()
           },

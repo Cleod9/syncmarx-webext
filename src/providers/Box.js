@@ -42,7 +42,7 @@ export default class Box extends StorageProvider {
     if (this.isAuthed()) {
       return axios({
         method: 'post',
-        url:  PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/box/revoke' : 'http://localhost:1800/auth/box/revoke',
+        url:  PRODUCTION ? 'https://syncmarx.com/auth/box/revoke' : 'http://localhost:1800/auth/box/revoke',
         params: {
           access_token: this.accessToken
         }
@@ -68,7 +68,7 @@ export default class Box extends StorageProvider {
           // Token invalid, get new refresh token
           return axios({
             method: 'post',
-            url: PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/box/refreshtoken' : 'http://localhost:1800/auth/box/refreshtoken',
+            url: PRODUCTION ? 'https://syncmarx.com/auth/box/refreshtoken' : 'http://localhost:1800/auth/box/refreshtoken',
             params: {
               refresh_token: this.refreshToken
             },

@@ -51,7 +51,7 @@ export default class Authentication extends React.Component {
 
     if (value === 'dropbox') {
       let dbx = new DropboxCls.DropboxAuth({ clientId: '1ea74e9vcsu22oz' });
-      let redirect_uri = PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/dropbox' : 'http://localhost:1800/auth/dropbox';
+      let redirect_uri = PRODUCTION ? 'https://syncmarx.com/auth/dropbox' : 'http://localhost:1800/auth/dropbox';
       dbx.getAuthenticationUrl(redirect_uri, null, 'code', 'offline', null, 'none', false)
         .then((authUrl) => {
           window.open(authUrl);
@@ -62,13 +62,13 @@ export default class Authentication extends React.Component {
     } else if (value === 'googledrive') {
       let scope = 'https://www.googleapis.com/auth/drive.file';
       let client_id = '230145339685-4smjsndovcf1l9ohdh59bl52pgvgmnga';
-      let redirect_uri = PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/googledrive' : 'http://localhost:1800/auth/googledrive';
+      let redirect_uri = PRODUCTION ? 'https://syncmarx.com/auth/googledrive' : 'http://localhost:1800/auth/googledrive';
       let authUrl = `https://accounts.google.com/o/oauth2/v2/auth?scope=${scope}&response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&prompt=consent&access_type=offline`;
 
       window.open(authUrl);
     } else if (value === 'box') {
       let client_id = PRODUCTION ? 'rjgyteu1uzgjmxpe34x5pj6fw0ndyzy5' : '1j91a6cw6wb2g71venpu6s1fgectc4wr';
-      let redirect_uri = PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/box' : 'http://localhost:1800/auth/box';
+      let redirect_uri = PRODUCTION ? 'https://syncmarx.com/auth/box' : 'http://localhost:1800/auth/box';
       let security_key = '00aed913eeff4bd7a72565c0a5594b6a';
       let authUrl = `https://account.box.com/api/oauth2/authorize?response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&state=${security_key}`;
 

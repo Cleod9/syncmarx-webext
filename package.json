@@ -1,6 +1,6 @@
 {
   "name": "syncmarx",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Web extension built for cross-browser bookmark syncing to the cloud.",
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
     "classnames": "2.3.1",
     "clean-webpack-plugin": "4.0.0",
     "copy-webpack-plugin": "9.1.0",
-    "cryptr": "6.0.3",
+    "cryptr": "3.0.0",
     "css-loader": "6.7.1",
     "detect-browser": "5.3.0",
     "dropbox": "10.32.0",

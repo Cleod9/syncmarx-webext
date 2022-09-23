@@ -75,7 +75,7 @@ export default class GoogleDrive extends StorageProvider {
           // Token invalid, get new refresh token
           return axios({
             method: 'post',
-            url: PRODUCTION ? 'https://syncmarx.gregmcleod.com/auth/googledrive/refreshtoken' : 'http://localhost:1800/auth/googledrive/refreshtoken',
+            url: PRODUCTION ? 'https://syncmarx.com/auth/googledrive/refreshtoken' : 'http://localhost:1800/auth/googledrive/refreshtoken',
             params: {
               refresh_token: this.refreshToken
             },
