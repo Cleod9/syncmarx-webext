@@ -29,7 +29,6 @@
     "@babel/preset-env": "7.19.0",
     "@babel/preset-react": "7.18.6",
     "autoprefixer": "10.4.9",
-    "axios": "0.27.2",
     "babel-loader": "8.2.5",
     "box-javascript-sdk": "https://github.com/allenmichael/box-javascript-sdk.git#ccdb42df3a35be86fc10c6f223e2a8757dcd31bb",
     "bootstrap": "4.6.2",

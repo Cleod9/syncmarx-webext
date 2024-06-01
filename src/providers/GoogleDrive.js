@@ -1,6 +1,5 @@
 import Logger from 'util/Logger';
 import StorageProvider from 'providers/StorageProvider';
-import * as axios from 'axios';
 import * as _ from 'lodash';
 
 
@@ -40,12 +39,11 @@ export default class GoogleDrive extends StorageProvider {
         // Revoke will remove access to the entire app for Google. We cannot call this endpoint without breaking other instances of this extension
         // The access token will just expire on its own over time and without the refresh token in memory can never be revived
         /*
-        return axios({
-          method: 'post',
-          url: 'https://accounts.google.com/o/oauth2/revoke',
-          params: {
+        fetch('https://accounts.google.com/o/oauth2/revoke', {
+          method: 'POST',
+          body: new URLSearchParams({
             token: this.accessToken
-          },
+          }),
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           }
@@ -60,35 +58,35 @@ export default class GoogleDrive extends StorageProvider {
   checkRefreshToken() {
     logger.log('Verifying access token...');
 
-    return axios({
-      method: 'get',
-      url: 'https://www.googleapis.com/oauth2/v3/tokeninfo',
-      params: {
-        access_token: this.accessToken
-      }
-    })
+    return fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + this.accessToken)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .catch((error) => {
         // Handle specific case of an invalid token
-        if (error.response && error.response.status === 400) {
+        if (error.message.includes("400")) {
           logger.log('Access token expired. Attempting to fetch new token...');
           
           // Token invalid, get new refresh token
-          return axios({
-            method: 'post',
-            url: PRODUCTION ? 'https://syncmarx.com/auth/googledrive/refreshtoken' : 'http://localhost:1800/auth/googledrive/refreshtoken',
-            params: {
-              refresh_token: this.refreshToken
-            },
+          const url = PRODUCTION ? 'https://syncmarx.com/auth/googledrive/refreshtoken' : 'http://localhost:1800/auth/googledrive/refreshtoken';
+          const params = new URLSearchParams({ refresh_token: this.refreshToken });
+
+          return fetch(`${url}?${params}`, {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
             }
           })
-          .then((response) => {
-            this.accessToken = response.data.access_token;
+          .then(response => response.json())
+          .then(data => {
+            this.accessToken = data.access_token;
 
             logger.log('Obtained new token!');
 
-            return response;
+            return data;
           });
         } else {
           logger.error('Problem checking token', error);
@@ -96,9 +94,9 @@ export default class GoogleDrive extends StorageProvider {
           throw error;
         }
       })
-      .then((response) => {
-        if (response) {
-          logger.log('Token info:', response.data);
+      .then((data) => {
+        if (data) {
+          logger.log('Token info:', data);
         } else {
           throw new Error('No response from provider');
         }
@@ -108,24 +106,18 @@ export default class GoogleDrive extends StorageProvider {
     // Make sure a folder exists on the drive to place data
     return this.checkRefreshToken()
       .then(() => {
-        return axios({
-          method: 'get',
-          url: 'https://www.googleapis.com/drive/v3/files',
-          headers: { 'Authorization': 'Bearer ' + this.accessToken },
-          params: {
-            includeItemsFromAllDrives: true,
-            supportsAllDrives: true
-          }
+        return fetch('https://www.googleapis.com/drive/v3/files?includeItemsFromAllDrives=true&supportsAllDrives=true', {
+          method: 'GET',
+          headers: { 'Authorization': 'Bearer ' + this.accessToken }
         })
-        .then((response) => {
-          logger.log(response.data.files);
+        .then(response => response.json())
+        .then(data => {
+          logger.log(data.files);
 
-          let fullFileList = response.data.files;
+          let fullFileList = data.files;
 
           // Extract folders from list
-          let appFolder = _.find(fullFileList, (file) => {
-            return file.mimeType === 'application/vnd.google-apps.folder' && file.name === 'syncmarx';
-          });
+          let appFolder = fullFileList.find(file => file.mimeType === 'application/vnd.google-apps.folder' && file.name === 'syncmarx');
 
           if (appFolder) {
             logger.log('App folder found:', appFolder);
@@ -133,22 +125,23 @@ export default class GoogleDrive extends StorageProvider {
           } else {
             logger.log('App folder not found, creating new one...');
 
-            return axios({
+            return fetch('https://www.googleapis.com/drive/v3/files', {
               method: 'POST',
-              url: 'https://www.googleapis.com/drive/v3/files',
               headers: { 'Authorization': 'Bearer ' + this.accessToken },
-              data: {
+              body: JSON.stringify({
                 name: 'syncmarx',
                 mimeType: 'application/vnd.google-apps.folder'
-              }
-            }).then((response) => {
-              logger.log('App folder created: ', response.data);
-    
-              return response.data;
+              })
+            })
+            .then(response => response.json())
+            .then(data => {
+              logger.log('App folder created: ', data);
+
+              return data;
             });
           }
         });
-      })
+      });
   }
   filesList() {
     return this.checkRefreshToken()
@@ -156,17 +149,17 @@ export default class GoogleDrive extends StorageProvider {
         return this.getOrCreateAppFolder();
       })
       .then(() => {
-        return axios({
-          method: 'get',
-          url: 'https://www.googleapis.com/drive/v3/files',
+        return fetch('https://www.googleapis.com/drive/v3/files', {
+          method: 'GET',
           headers: { 'Authorization': 'Bearer ' + this.accessToken }
         })
       })
-      .then((response) => {
-        logger.log(response.data.files);
+      .then(response => response.json())
+      .then(data => {
+        logger.log(data.files);
 
         // Extract files from list
-        let filesFound = _.filter(response.data.files, (file) => {
+        let filesFound = _.filter(data.files, (file) => {
           return file.mimeType !== 'application/vnd.google-apps.folder';
         });
 
@@ -226,37 +219,30 @@ export default class GoogleDrive extends StorageProvider {
         }
 
         // Intitiate the upload
-        return axios({
+        return fetch(`${url}?uploadType=resumable`, {
           method: method,
-          url: url,
-          params: {
-            uploadType: 'resumable',
-          },
-          data: metadata,
+          body: JSON.stringify(metadata),
           headers: {
             'Authorization': 'Bearer ' + this.accessToken,
             'Content-Type': 'application/json; charset=UTF-8',
-            'X-Upload-Content-Length': file.size,
+            'X-Upload-Content-Length': file.size.toString(),
             'X-Upload-Content-Type': 'text/plain'
           }
         });
       })
-      .then((response) => {
+      .then(response => {
         logger.info(response);
-        
+
         // Upload the file
-        return axios({
+        return fetch(response.headers.get('Location'), {
           method: 'PUT',
-          url: response.headers.location,
-          params: {
-            uploadType: 'resumable'
-          },
-          data: file,
+          body: file,
           headers: {
             'Authorization': 'Bearer ' + this.accessToken
           }
-        })
+        });
       })
+      .then(response => response.json())
       .then((response) => {
         logger.info(response);
       });
@@ -272,31 +258,28 @@ export default class GoogleDrive extends StorageProvider {
         let existingFile = _.find(files, (f) => f.id === data.id);
         
         // Intitiate the download
-        return axios({
+        return fetch(`https://www.googleapis.com/drive/v3/files/${existingFile.id}?alt=media`, {
           method: 'GET',
-          url: `https://www.googleapis.com/drive/v3/files/${existingFile.id}`,
-          params: {
-            alt: 'media'
-          },
           headers: {
             'Authorization': 'Bearer ' + this.accessToken
           }
         });
       })
-      .then((response) => {
-        logger.log('File downloaded!', response);
-
+      .then(response => response.text())
+      .then(data => {
+        logger.log('File downloaded!', data);
+      
         // Decompress and decrypt
         var contents = null;
         var compressed = false;
-
+      
         try {
-          contents = JSON.parse(response.data);
+          contents = JSON.parse(data);
         } catch(e) {
-          contents = this.decryptData(response.data);
+          contents = this.decryptData(data);
           compressed = true;
         }
-
+      
         return { contents: contents, compressed: compressed };
       });
   }

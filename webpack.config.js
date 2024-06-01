@@ -96,7 +96,8 @@ module.exports = {
   // Currently we need to add '.ts' to resolve.extensions array.
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js', '.json', '.scss', '.css'],
-    modules: ['node_modules', 'src']
+    modules: ['node_modules', 'src'],
+    fallback: { vm: false }
   },
 
   // Source maps support (or 'inline-source-map' also works)
