@@ -1,6 +1,6 @@
 require('es6-promise').polyfill();
 require('es6-symbol/implement');
-window.browser = require('webextension-polyfill');
+var browser = require('webextension-polyfill');
 import BookmarkManager from 'core/BookmarkManager';
 import Logger from 'util/Logger';
 import * as Debug from 'core/Debug';
@@ -19,21 +19,21 @@ SaveData.init(manager);
  */
 function updateIcon(type) {
   if (type === 'disabled') {
-    browser.browserAction.setIcon({
+    browser.action.setIcon({
       path: {
         19: "icons/icon_disabled_19.png",
         38: "icons/icon_disabled_38.png"
       }
     });
   } else if (type === 'syncing') {
-    browser.browserAction.setIcon({
+    browser.action.setIcon({
       path: {
         19: "icons/icon_sync_19.png",
         38: "icons/icon_sync_38.png"
       }
     });
   } else if (type === 'normal') {
-    browser.browserAction.setIcon({
+    browser.action.setIcon({
       path: {
         19: "icons/icon_19.png",
         38: "icons/icon_38.png"
@@ -41,13 +41,6 @@ function updateIcon(type) {
     });
   }
 }
-
-/*
- * Add or remove the bookmark on the current page.
- */
-browser.browserAction.setPopup({
-  popup: 'settings.htm'   
-});
 
 /**
  * Listens for incoming messages from the extension UI.
@@ -346,9 +339,10 @@ SaveData.loadSettings()
     updateIcon('disabled');
   });
 
+logger.log('Worker is ready!');
 
 // Attach DEBUG to window for non-production build
 if (!PRODUCTION) {
   Debug.init(manager);
-  window.DEBUG = Debug;
+  globalThis.DEBUG = Debug;
 }

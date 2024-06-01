@@ -2,7 +2,7 @@
 
 ## What it does
 
-A web extension to synchronize bookmarks between browers. Supports the following features:
+A web extension to synchronize bookmarks between browsers. Supports the following features:
 
 * Works in Firefox, Google Chrome, Vivaldi, and Brave desktop browsers
 * Syncs as a single backup file to Dropbox, Google Drive, or Box

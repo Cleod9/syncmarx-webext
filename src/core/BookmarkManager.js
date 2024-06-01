@@ -1,7 +1,7 @@
 require('es6-promise').polyfill();
 var _ = require('lodash');
 var LZString = require('lz-string');
-var Cryptr = require('cryptr');
+var browser = require('webextension-polyfill');
 import Logger from 'util/Logger';
 import StorageProvider from 'providers/StorageProvider';
 
@@ -132,6 +132,10 @@ export default class BookmarkManager {
     this.autoSync = this.autoSync.bind(this);
   
     this.init();
+
+    browser.alarms.onAlarm.addListener((alarm) => {
+      // nothing to be done here, auto-sync will occur as a side effect of the worker initializing
+    });
     
     // Only run when the class is first created (Used to track drop down on auth page)
     this.providerDropdown = this.provider.getType();
@@ -392,10 +396,10 @@ export default class BookmarkManager {
       this.syncRate = 35791;
     }
 
-    clearInterval(this.syncInterval);
+    browser.alarms.clear('syncmarx_cron');
 
     if (this.syncRate > 0) {
-      this.syncInterval = setInterval(this.autoSync, this.syncRate * 60 * 1000);
+      browser.alarms.create('syncmarx_cron', { periodInMinutes: this.syncRate });
     }
   }
 
