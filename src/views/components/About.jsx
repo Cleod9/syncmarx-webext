@@ -20,7 +20,7 @@ export default class About extends React.Component {
         <h5 className="mb-2">About</h5>
         <p>Developed by Greg McLeod</p>
         <p className="small"><a href="https://syncmarx.com" target="_blank">Website</a> | <a href="https://syncmarx.com#privacy" target="_blank">Privacy Policy</a> | <a href="https://syncmarx.com#terms" target="_blank">Terms</a></p>
-        <p>&copy; 2022 by McLeodGaming Inc.</p>
+        <p>&copy; 2024 by McLeodGaming Inc.</p>
         <p className="small">Icons by Open Iconic — <a href="https://www.useiconic.com/open" target="_blank">www.useiconic.com/open</a></p>
         <p>All Rights Reserved.</p>
         <a href="https://paypal.me/McLeodGaming" target="_blank"><button id="donate" type="button" className="btn btn-warning">Donate</button></a>
