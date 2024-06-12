@@ -3,6 +3,7 @@
  * Persistent settings management
  */
 
+var browser = require('webextension-polyfill');
 import Logger from 'util/Logger';
 
 var logger = new Logger('[SaveData.js]');

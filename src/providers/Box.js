@@ -1,7 +1,6 @@
 import Logger from 'util/Logger';
 import StorageProvider from 'providers/StorageProvider';
 import * as _ from 'lodash';
-import * as axios from 'axios';
 
 var BoxSdk = require('box-javascript-sdk').default;
 var logger = new Logger('[Box.js]');
@@ -40,12 +39,11 @@ export default class Box extends StorageProvider {
   }
   deauthorize() {
     if (this.isAuthed()) {
-      return axios({
-        method: 'post',
-        url:  PRODUCTION ? 'https://syncmarx.com/auth/box/revoke' : 'http://localhost:1800/auth/box/revoke',
-        params: {
-          access_token: this.accessToken
-        }
+      const url = PRODUCTION ? 'https://syncmarx.com/auth/box/revoke' : 'http://localhost:1800/auth/box/revoke';
+      const params = new URLSearchParams({ access_token: this.accessToken });
+
+      return fetch(`${url}?${params}`, {
+        method: 'POST',
       })
       .then(() => {
         this.accessToken = null;
@@ -66,24 +64,24 @@ export default class Box extends StorageProvider {
           logger.log('Access token expired. Attempting to fetch new token...');
           
           // Token invalid, get new refresh token
-          return axios({
-            method: 'post',
-            url: PRODUCTION ? 'https://syncmarx.com/auth/box/refreshtoken' : 'http://localhost:1800/auth/box/refreshtoken',
-            params: {
-              refresh_token: this.refreshToken
-            },
+          const url = PRODUCTION ? 'https://syncmarx.com/auth/box/refreshtoken' : 'http://localhost:1800/auth/box/refreshtoken';
+          const params = new URLSearchParams({ refresh_token: this.refreshToken });
+
+          return fetch(`${url}?${params}`, {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded'
             }
           })
-          .then((response) => {
-            this.accessToken = response.data.access_token;
-            this.refreshToken = response.data.refresh_token;
+          .then(response => response.json())
+          .then(data => {
+            this.accessToken = data.access_token;
+            this.refreshToken = data.refresh_token;
             this.client = new this.box.BasicBoxClient({accessToken: this.accessToken });
 
             logger.log('Obtained new token!');
 
-            return response;
+            return data;
           });
         } else {
           logger.error('Problem checking token', error);
@@ -196,27 +194,27 @@ export default class Box extends StorageProvider {
             let existingFile = _.find(files, (f) => f.id === data.id);
               
             // Intitiate the download
-            return axios({
+            return fetch('https://api.box.com/2.0/files/' + existingFile.id + '/content', {
               method: 'GET',
-              url: 'https://api.box.com/2.0/files/' + existingFile.id + '/content',
               headers: {
                 'Authorization': 'Bearer ' + this.accessToken,
                 'Content-Type': 'application/x-www-form-urlencoded'
               }
-            })
+            });
           });
       })
-      .then((response) => {
-        logger.log('File downloaded!', response);
+      .then(response => response.text())
+      .then((data) => {
+        logger.log('File downloaded!', data);
 
         // Decompress and decrypt
         var contents = null;
         var compressed = false;
 
         try {
-          contents = JSON.parse(response.data);
+          contents = JSON.parse(data);
         } catch(e) {
-          contents = this.decryptData(response.data);
+          contents = this.decryptData(data);
           compressed = true;
         }
 

@@ -47,14 +47,26 @@ plugins.push(new CleanWebpackPlugin({
   plugins: ['app/**/*.*']
 }));
 plugins.push(new CopyPlugin({
-  patterns: [{ from: 'static', to: '.' }]
+  patterns: [
+    { from: 'static', to: '.' },
+    (/firefox/.test(process.env.SYNCMARX_MANIFEST)) ?
+      {
+        from:  'src/manifest-firefox.json',
+        to: './manifest.json',
+      } :
+      {
+        from:  'src/manifest.json',
+        to: './manifest.json'
+      }
+    ]
 }));
 plugins.push(
   autoprefixer
 );
 plugins.push(
   new webpack.DefinePlugin({
-    PRODUCTION: mode === 'production'
+    PRODUCTION: mode === 'production',
+    'process.env.NODE_ENV': (mode === 'production') ? JSON.stringify('production') : JSON.stringify('development')
   })
 );
 plugins.push(
@@ -62,6 +74,12 @@ plugins.push(
     // Note: Newer versions of the Dropbox SDK and cryptr libraries have a hard dependency on native Node.js libs
     includeAliases: ['crypto','stream', 'Buffer']
   })
+);
+plugins.push(
+    // Fix "process is not defined" error:
+    new webpack.ProvidePlugin({
+      process: 'process/browser',
+    }),
 );
 
 module.exports = {
@@ -78,7 +96,8 @@ module.exports = {
   // Currently we need to add '.ts' to resolve.extensions array.
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js', '.json', '.scss', '.css'],
-    modules: ['node_modules', 'src']
+    modules: ['node_modules', 'src'],
+    fallback: { vm: false }
   },
 
   // Source maps support (or 'inline-source-map' also works)

@@ -1,3 +1,5 @@
+var browser = require('webextension-polyfill');
+
 import React from 'react';
 import classNames from 'classnames';
 import About from 'views/components/About';

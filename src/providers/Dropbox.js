@@ -1,7 +1,6 @@
 import Logger from 'util/Logger';
 import { default as StorageProvider, StorageProviderError } from 'providers/StorageProvider';
 import * as _ from 'lodash';
-import * as axios from 'axios';
 import * as DropboxCls from 'dropbox';
 
 var logger = new Logger('[Dropbox.js]');
@@ -56,21 +55,21 @@ export default class Dropbox extends StorageProvider {
         logger.log('Access token expired. Attempting to fetch new token...');
         
         // Token invalid, get new refresh token
-        return axios({
-          method: 'post',
-          url: PRODUCTION ? 'https://syncmarx.com/auth/dropbox/refreshtoken' : 'http://localhost:1800/auth/dropbox/refreshtoken',
-          params: {
-            refresh_token: this.dbauth.getRefreshToken()
-          },
+        const url = PRODUCTION ? 'https://syncmarx.com/auth/dropbox/refreshtoken' : 'http://localhost:1800/auth/dropbox/refreshtoken';
+        const params = new URLSearchParams({ refresh_token: this.dbauth.getRefreshToken() });
+
+        return fetch(`${url}?${params}`, {
+          method: 'POST',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/x-www-form-urlencoded'
           }
         })
-          .then((response) => {
-            this.dbauth.setAccessToken(response.data.access_token);
-            this.db = new DropboxCls.Dropbox({ accessToken: this.dbauth.getAccessToken() });
-            logger.log('Obtained new access token!');
-          });
+        .then(response => response.json())
+        .then(data => {
+          this.dbauth.setAccessToken(data.access_token);
+          this.db = new DropboxCls.Dropbox({ accessToken: this.dbauth.getAccessToken() });
+          logger.log('Obtained new access token!');
+        });
       })
       .catch((error) => {
         // Assume that the token expired

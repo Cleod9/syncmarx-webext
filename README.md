@@ -2,13 +2,13 @@
 
 ## What it does
 
-A web extension to synchronize bookmarks between browers. Supports the following features:
+A web extension to synchronize bookmarks between browsers. Supports the following features:
 
+* Sync bookmarks as a single backup file to Dropbox, Google Drive, or Box
 * Works in Firefox, Google Chrome, Vivaldi, and Brave desktop browsers
-* Syncs as a single backup file to Dropbox, Google Drive, or Box
 * Configurable automatic sync
 
-Note that this extension talks to a companion backend app required for initial handshake to third-party APIs called [syncmarx-api](https://github.com/Cleod9/syncmarx-api)
+Note that this extension talks to a companion backend app required for initial handshakes to third-party APIs called [syncmarx-api](https://github.com/Cleod9/syncmarx-api). This backend is hosted for you for free, but it may be possible in the future to configure the extension for self-hosting.
 
 ## How to Build
 
@@ -36,7 +36,7 @@ npm run prod-watch
 
 You have two options for testing. The first is to simply build the app, and load the directory as an unpacked extension directly from within your browser.
 
-The other way is to run `npm run dev-web-ext` (or `prod-web-ext` depending on target environment). This will load the extension into a temporary instance of Firefox for testing.
+The other way is to run `npm run dev-web-ext-firefox` (or `prod-web-ext-firefox` depending on target environment). This will load the extension into a temporary instance of Firefox for testing. Note that `dev-web-ext` and `prod-web-ext` scripts exist as well, but they are not fully supported by Firefox at this time due to the lack of service worker support ([see here](https://blog.mozilla.org/addons/2024/03/13/manifest-v3-manifest-v2-march-2024-update/)). The hope is to eventually remove those commands in favor of the service worker approach.
 
 ## How to Configure Syncmarx
 
@@ -48,4 +48,3 @@ Follow the on-screen instructions. The app will walk you through the authenticat
 * Will not manage browser-specific bookmark functionality due to Web Extension spec limitations (e.g. Seperators, tags, keywords, description, favicons, etc.)
 * Will not track Firefox's "Other Bookmarks" folder (a.k.a. "Unorganized" bookmarks)
 * Still overall alpha in general so it is recommended to create a backup of your bookmarks before using
-* Microsft Edge support will not be possible until this issue is resolved
