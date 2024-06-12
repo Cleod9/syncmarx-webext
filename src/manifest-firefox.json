@@ -27,5 +27,10 @@
   },
   "background": {
     "scripts": ["app.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{83ff948e-1ab8-403b-bb82-49581bdce831}"
+    }
   }
 }
