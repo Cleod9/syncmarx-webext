@@ -8,7 +8,7 @@ A web extension to synchronize bookmarks between browsers. Supports the followin
 * Works in Firefox, Google Chrome, Vivaldi, and Brave desktop browsers
 * Configurable automatic sync
 
-Note that this extension talks to a companion backend app required for initial handshakes to third-party APIs called [syncmarx-api](https://github.com/Cleod9/syncmarx-api). This backend hosted for you but it may be possible in future to configure the extension for self-hosting.
+Note that this extension talks to a companion backend app required for initial handshakes to third-party APIs called [syncmarx-api](https://github.com/Cleod9/syncmarx-api). This backend is hosted for you for free, but it may be possible in the future to configure the extension for self-hosting.
 
 ## How to Build
 
