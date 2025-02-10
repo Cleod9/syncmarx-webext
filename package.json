@@ -1,10 +1,13 @@
 {
   "name": "syncmarx",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Web extension built for cross-browser bookmark syncing to the cloud.",
   "repository": {
     "type": "git",
     "url": "git@bitbucket.org:Cleod9/syncmarx-webext.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "dev": "set NODE_ENV=dev && webpack",

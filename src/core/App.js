@@ -8,15 +8,12 @@ import * as SaveData from 'util/SaveData';
 import { StorageProviderError } from 'providers/StorageProvider';
 
 var logger = new Logger('[App.js]');
-var manager = new BookmarkManager();
-var version = require('../../version.json');
-
-SaveData.init(manager);
+var manager = null;
 
 /**
  * Wrapper around browser.runtime.sendMessage
  */
-function safeSendMessage(message, options) {
+async function safeSendMessage(message, options) {
   return browser.runtime.sendMessage(message, options)
     .then(function () {
       logger.log('Message sent:', message);
@@ -60,7 +57,9 @@ function updateIcon(type) {
  * 
  * TODO: Break out conditionals to separate functions to make the data params clearer
  */
-browser.runtime.onMessage.addListener(function (data) {
+browser.runtime.onMessage.addListener(async function (data) {
+  await getManager();
+
   if (data.action === 'init') {
     // Initialize the extension
     safeSendMessage({ action: 'initComplete', authorized: manager.provider.isAuthed(), compression: manager.compression, providerDropdown: manager.providerDropdown });
@@ -285,77 +284,102 @@ function formatRejection(e, defaultText) {
 }
 
 /**
- * Attach callback hook for auto-sync
+ * Gets the BookmarkManager instance, initializing it if necessary 
+ * @returns 
  */
-manager.onAutoSyncHook = function () {
-  SaveData.saveSettings();
-};
+async function getManager() {
+  if (manager) {
+    return manager;
+  }
+  manager = new BookmarkManager();
+  
+  SaveData.init(manager);
+  
 
-// Always start the app showing the syncing symbol
-updateIcon('syncing');
-
-SaveData.loadSettings()
-  .then(function (settings) {
-    logger.log('Loaded settings:', settings);
-    // Store the remembered profile
-    if (settings.profileName) {
-      manager.profileName = settings.profileName;
-    }
-
-    // Use the last sync time to remember when was last synced
-    if (settings.lastSyncTime) {
-      manager.lastSyncTime = settings.lastSyncTime;
-    }
-
-    // Update the sync rate
-    if (typeof settings.syncRate === 'number' && settings.syncRate >= 0) {
-      manager.changeSyncRate(settings.syncRate);
-    }
-
-    // Update the compression setting
-    manager.compression = (settings.compression) ? true : false;
-
-    // Update the provider dropdown setting
-    manager.providerDropdown = settings.providerDropdown;
-
-    // Test login to storage provider
-    if (settings.credentials) {
-      return manager.auth(settings.provider, settings.credentials)
-        .then(function () {
-          updateIcon('normal');
-          logger.log('App is authorized');
-        });
-    } else {
+  /**
+   * Attach callback hook for auto-sync
+   */
+  manager.onAutoSyncHook = function () {
+    SaveData.saveSettings();
+  };
+  
+  // Always start the app showing the syncing symbol
+  updateIcon('syncing');
+  
+  await SaveData.loadSettings()
+    .then(function (settings) {
+      logger.log('Loaded settings:', settings);
+      // Store the remembered profile
+      if (settings.profileName) {
+        manager.profileName = settings.profileName;
+      }
+  
+      // Use the last sync time to remember when was last synced
+      if (settings.lastSyncTime) {
+        manager.lastSyncTime = settings.lastSyncTime;
+      }
+  
+      // Update the sync rate
+      if (typeof settings.syncRate === 'number' && settings.syncRate >= 0) {
+        manager.changeSyncRate(settings.syncRate);
+      }
+  
+      // Update the compression setting
+      manager.compression = (settings.compression) ? true : false;
+  
+      // Update the provider dropdown setting
+      manager.providerDropdown = settings.providerDropdown;
+  
+      // Test login to storage provider
+      if (settings.credentials) {
+        return manager.auth(settings.provider, settings.credentials)
+          .then(function () {
+            updateIcon('normal');
+            logger.log('App is authorized');
+          });
+      } else {
+        updateIcon('disabled');
+        logger.log('App is unauthorized');
+      }
+    })
+    .then(function () {
+      return manager.loadLocalData();
+    })
+    .then(function () {
+      if (manager.provider.isAuthed() && manager.syncRate !== 0) {
+        manager.getProfiles()
+          .then(function () {
+            return manager.sync();
+          });
+      }
+    })
+    .then(function () {
+      return SaveData.saveSettings();
+    })
+    .then(function () {
+      logger.log('Initialization completed');
+    })
+    .catch(function (e) {
+      logger.error('Problem launching app', e);
       updateIcon('disabled');
-      logger.log('App is unauthorized');
-    }
-  })
-  .then(function () {
-    return manager.loadLocalData();
-  })
-  .then(function () {
-    if (manager.provider.isAuthed() && manager.syncRate !== 0) {
-      manager.getProfiles()
-        .then(function () {
-          return manager.sync();
-        });
-    }
-  })
-  .then(function () {
-    return SaveData.saveSettings();
-  })
-  .then(function () {
-    logger.log('Initialization completed');
-  })
-  .catch(function (e) {
-    logger.error('Problem launching app', e);
-    updateIcon('disabled');
-  });
+    });
 
-logger.log('Worker is ready!');
-
-// Attach DEBUG to window for non-production build
-if (!PRODUCTION) {
-  Debug.init(manager);
-  globalThis.DEBUG = Debug;
+  // Attach DEBUG to window for non-production build
+  if (!PRODUCTION) {
+    Debug.init(manager);
+    globalThis.DEBUG = Debug;
+  }
+  
+  return manager;
 }
+
+browser.runtime.onStartup.addListener(async () => {
+  await getManager();
+  logger.log('Worker is ready!');
+
+  // Ensure re-initialization on alarm
+  browser.alarms.onAlarm.addListener(async (alarm) => {
+    await getManager();
+    logger.log('Worker is awake!');
+  });
+});
