@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "syncmarx",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "author": "Greg McLeod",
   "description": "Web extension built for cross-browser bookmark syncing to the cloud.",
   "icons": {

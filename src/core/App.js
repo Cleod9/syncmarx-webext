@@ -376,10 +376,14 @@ async function getManager() {
 browser.runtime.onStartup.addListener(async () => {
   await getManager();
   logger.log('Worker is ready!');
+});
 
-  // Ensure re-initialization on alarm
-  browser.alarms.onAlarm.addListener(async (alarm) => {
+
+browser.alarms.onAlarm.addListener(async (alarm) => {
+  logger.log('Alarm fired: ', alarm.name);
+
+  if (alarm.name === 'syncmarx_cron') {
     await getManager();
-    logger.log('Worker is awake!');
-  });
+    manager.autoSync();
+  } 
 });
